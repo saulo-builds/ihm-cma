@@ -1,0 +1,646 @@
+<!-- ==================================================================
+     Usuários — Cadastro (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cad);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Card de filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Card de resultados ===== */
+  .results-count {
+    font-size: 12px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  tr.flash {
+    animation: flash-row 0.6s ease;
+  }
+
+  @keyframes flash-row {
+    0% { background: color-mix(in srgb, var(--mon) 30%, transparent); }
+    100% { background: transparent; }
+  }
+
+  /* ===== Badge de Perfil ===== */
+  .badge-perfil {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .badge-perfil.perfil-admin {
+    background: color-mix(in srgb, var(--mon) 18%, transparent);
+    color: var(--mon);
+    border: 1px solid color-mix(in srgb, var(--mon) 55%, transparent);
+  }
+
+  .badge-perfil.perfil-operador {
+    background: color-mix(in srgb, var(--cad) 18%, transparent);
+    color: var(--cad);
+    border: 1px solid color-mix(in srgb, var(--cad) 55%, transparent);
+  }
+
+  /* ===== Toggle Ativo/Inativo ===== */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-md);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: color-mix(in srgb, var(--ok) 30%, transparent);
+    border-color: var(--ok);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(18px);
+    background: var(--ok-hi);
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text-hi);
+  }
+
+  /* ===== Modais (<dialog> nativo) ===== */
+  dialog.modal {
+    border: none;
+    padding: 0;
+    width: 460px;
+    max-width: 92vw;
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    color: var(--text-hi);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  dialog.modal::backdrop {
+    background: rgba(4, 4, 12, 0.7);
+  }
+
+  dialog.modal[open] {
+    animation: modal-in 0.15s ease;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-md);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-hi);
+  }
+
+  .modal-body {
+    padding: 18px;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .form-hint {
+    font-size: 11.5px;
+    color: var(--text-md);
+    margin-top: 6px;
+  }
+
+  .form-hint.error {
+    color: var(--crit-hi);
+  }
+
+  .form-hint.ok {
+    color: var(--ok-hi);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 900px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Cadastro</div>
+  <h1 class="page-header__title">Usuários</h1>
+  <p class="page-header__desc">Controle de acesso e perfis de usuário</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-email">E-mail</label>
+        <input type="text" class="input" id="flt-email" placeholder="Buscar por e-mail..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-perfil">Perfil</label>
+        <select class="select" id="flt-perfil">
+          <option value="">Todos</option>
+          <option value="Operador CMA">Operador CMA</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-ativo">Ativo</label>
+        <select class="select" id="flt-ativo">
+          <option value="">Todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Resultados ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Resultados</div>
+      <div class="card-subtitle" id="results-count">3 registros encontrados</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table" id="usuarios-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Perfil</th>
+          <th>Último Acesso</th>
+          <th>Ativo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="usuarios-tbody">
+        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="table-empty" hidden>Nenhum usuário encontrado para os filtros aplicados.</div>
+  </div>
+</div>
+
+<!-- ===== Modal Incluir / Alterar ===== -->
+<dialog class="modal" id="modal-form">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-form-title">Incluir Usuário</div>
+    <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="form-nome">Nome</label>
+        <input type="text" class="input" id="form-nome" placeholder="Ex.: Saulo Lima" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-email">E-mail</label>
+        <input type="email" class="input" id="form-email" placeholder="Ex.: saulo.lima@cptm.sp.gov.br" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-perfil">Perfil</label>
+        <select class="select" id="form-perfil">
+          <option value="Operador CMA">Operador CMA</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Ativo</label>
+        <label class="toggle">
+          <input type="checkbox" id="form-ativo" checked />
+          <span class="toggle-track"></span>
+          <span class="toggle-label" id="form-ativo-label">Ativo</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Redefinir Senha ===== -->
+<dialog class="modal" id="modal-senha">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-senha-title">Redefinir Senha</div>
+    <button type="button" class="modal-close" data-close="modal-senha" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="senha-nova">Nova Senha</label>
+        <input type="password" class="input" id="senha-nova" placeholder="Digite a nova senha" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="senha-confirmar">Confirmar Senha</label>
+        <input type="password" class="input" id="senha-confirmar" placeholder="Repita a nova senha" />
+        <div class="form-hint" id="senha-hint">As senhas devem ser iguais.</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-senha">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-senha" disabled>Salvar</button>
+  </div>
+</dialog>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado dos usuários ===== */
+  var USUARIOS = [
+    { id: 1, nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br', perfil: 'Administrador', ultimoAcesso: '11/08/2026 21:55', ativo: true },
+    { id: 2, nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br', perfil: 'Operador CMA', ultimoAcesso: '11/08/2026 18:30', ativo: true },
+    { id: 3, nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br', perfil: 'Operador CMA', ultimoAcesso: '10/08/2026 08:15', ativo: true }
+  ];
+
+  var PERFIL_CLASS = {
+    'Administrador': 'perfil-admin',
+    'Operador CMA': 'perfil-operador'
+  };
+
+  var nextId = USUARIOS.length + 1;
+  var state = { filtered: USUARIOS.slice() };
+  var editingId = null;
+  var senhaTargetId = null;
+
+  var tbody = document.getElementById('usuarios-tbody');
+  var emptyEl = document.getElementById('table-empty');
+  var countEl = document.getElementById('results-count');
+
+  function findById(id) {
+    for (var i = 0; i < USUARIOS.length; i++) {
+      if (USUARIOS[i].id === id) return USUARIOS[i];
+    }
+    return null;
+  }
+
+  function perfilBadge(perfil) {
+    return '<span class="badge-perfil ' + (PERFIL_CLASS[perfil] || '') + '">' + perfil + '</span>';
+  }
+
+  function render() {
+    tbody.innerHTML = state.filtered.map(function (u) {
+      return '<tr id="row-' + u.id + '">' +
+        '<td class="hi">' + u.nome + '</td>' +
+        '<td>' + u.email + '</td>' +
+        '<td>' + perfilBadge(u.perfil) + '</td>' +
+        '<td>' + u.ultimoAcesso + '</td>' +
+        '<td>' + (u.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + u.id + '">Alterar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="toggle-ativo" data-id="' + u.id + '">' + (u.ativo ? 'Desativar' : 'Ativar') + '</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="redefinir-senha" data-id="' + u.id + '">Redefinir Senha</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    tbody.parentElement.hidden = state.filtered.length === 0;
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var email = document.getElementById('flt-email').value.trim().toLowerCase();
+    var perfil = document.getElementById('flt-perfil').value;
+    var ativo = document.getElementById('flt-ativo').value;
+
+    state.filtered = USUARIOS.filter(function (u) {
+      if (nome && u.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (email && u.email.toLowerCase().indexOf(email) === -1) return false;
+      if (perfil && u.perfil !== perfil) return false;
+      if (ativo === 'Ativo' && !u.ativo) return false;
+      if (ativo === 'Inativo' && u.ativo) return false;
+      return true;
+    });
+    render();
+  }
+
+  function clearFilters() {
+    document.getElementById('flt-nome').value = '';
+    document.getElementById('flt-email').value = '';
+    document.getElementById('flt-perfil').value = '';
+    document.getElementById('flt-ativo').value = '';
+    state.filtered = USUARIOS.slice();
+    render();
+  }
+
+  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  /* ===== Modal Incluir/Alterar ===== */
+  var modalForm = document.getElementById('modal-form');
+  var formAtivo = document.getElementById('form-ativo');
+  var formAtivoLabel = document.getElementById('form-ativo-label');
+
+  formAtivo.addEventListener('change', function () {
+    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
+  });
+
+  function openIncluir() {
+    editingId = null;
+    document.getElementById('modal-form-title').textContent = 'Incluir Usuário';
+    document.getElementById('form-nome').value = '';
+    document.getElementById('form-email').value = '';
+    document.getElementById('form-perfil').value = 'Operador CMA';
+    formAtivo.checked = true;
+    formAtivoLabel.textContent = 'Ativo';
+    modalForm.showModal();
+  }
+
+  function openAlterar(id) {
+    var u = findById(id);
+    if (!u) return;
+    editingId = id;
+    document.getElementById('modal-form-title').textContent = 'Alterar Usuário';
+    document.getElementById('form-nome').value = u.nome;
+    document.getElementById('form-email').value = u.email;
+    document.getElementById('form-perfil').value = u.perfil;
+    formAtivo.checked = u.ativo;
+    formAtivoLabel.textContent = u.ativo ? 'Ativo' : 'Inativo';
+    modalForm.showModal();
+  }
+
+  document.getElementById('btn-incluir').addEventListener('click', openIncluir);
+
+  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+    var nome = document.getElementById('form-nome').value.trim();
+    var email = document.getElementById('form-email').value.trim();
+    if (!nome || !email) {
+      alert('Preencha Nome e E-mail antes de salvar.');
+      return;
+    }
+    var perfil = document.getElementById('form-perfil').value;
+    var ativo = formAtivo.checked;
+
+    if (editingId) {
+      var u = findById(editingId);
+      u.nome = nome;
+      u.email = email;
+      u.perfil = perfil;
+      u.ativo = ativo;
+    } else {
+      USUARIOS.push({ id: nextId++, nome: nome, email: email, perfil: perfil, ultimoAcesso: '—', ativo: ativo });
+    }
+    modalForm.close();
+    state.filtered = USUARIOS.slice();
+    render();
+  });
+
+  /* ===== Ação rápida: Ativar/Desativar ===== */
+  function toggleAtivo(id) {
+    var u = findById(id);
+    if (!u) return;
+    u.ativo = !u.ativo;
+    render();
+    var row = document.getElementById('row-' + id);
+    if (row) row.classList.add('flash');
+  }
+
+  /* ===== Modal Redefinir Senha ===== */
+  var modalSenha = document.getElementById('modal-senha');
+  var senhaNova = document.getElementById('senha-nova');
+  var senhaConfirmar = document.getElementById('senha-confirmar');
+  var senhaHint = document.getElementById('senha-hint');
+  var btnSalvarSenha = document.getElementById('btn-salvar-senha');
+
+  function validarSenhas() {
+    var nova = senhaNova.value;
+    var confirmar = senhaConfirmar.value;
+
+    if (!nova || !confirmar) {
+      senhaHint.textContent = 'As senhas devem ser iguais.';
+      senhaHint.className = 'form-hint';
+      btnSalvarSenha.disabled = true;
+      return;
+    }
+    if (nova.length < 6) {
+      senhaHint.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+      senhaHint.className = 'form-hint error';
+      btnSalvarSenha.disabled = true;
+      return;
+    }
+    if (nova !== confirmar) {
+      senhaHint.textContent = 'As senhas não coincidem.';
+      senhaHint.className = 'form-hint error';
+      btnSalvarSenha.disabled = true;
+      return;
+    }
+    senhaHint.textContent = 'As senhas coincidem.';
+    senhaHint.className = 'form-hint ok';
+    btnSalvarSenha.disabled = false;
+  }
+
+  senhaNova.addEventListener('input', validarSenhas);
+  senhaConfirmar.addEventListener('input', validarSenhas);
+
+  function openRedefinirSenha(id) {
+    var u = findById(id);
+    if (!u) return;
+    senhaTargetId = id;
+    document.getElementById('modal-senha-title').textContent = 'Redefinir Senha — ' + u.nome;
+    senhaNova.value = '';
+    senhaConfirmar.value = '';
+    senhaHint.textContent = 'As senhas devem ser iguais.';
+    senhaHint.className = 'form-hint';
+    btnSalvarSenha.disabled = true;
+    modalSenha.showModal();
+  }
+
+  btnSalvarSenha.addEventListener('click', function () {
+    if (btnSalvarSenha.disabled || senhaTargetId == null) return;
+    modalSenha.close();
+    alert('Senha redefinida com sucesso.');
+    senhaTargetId = null;
+  });
+
+  /* ===== Delegação de cliques nas ações da tabela ===== */
+  tbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-action]');
+    if (!btn) return;
+    var id = parseInt(btn.getAttribute('data-id'), 10);
+    var action = btn.getAttribute('data-action');
+    if (action === 'alterar') openAlterar(id);
+    else if (action === 'toggle-ativo') toggleAtivo(id);
+    else if (action === 'redefinir-senha') openRedefinirSenha(id);
+  });
+
+  /* ===== Fechamento de modais (botão ✕ / Cancelar) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = document.getElementById(btn.getAttribute('data-close'));
+      if (dialog) dialog.close();
+    });
+  });
+
+  render();
+})();
+</script>

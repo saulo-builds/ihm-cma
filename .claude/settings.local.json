@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find / -iname \"*chromium-cli*\" 2>/dev/null | head -20)",
+      "Read(//c//**)",
+      "Bash(mkdir -p /c/Users/Saulo/AppData/Local/Temp/claude/c--Users-Saulo-ihm-cma/122070cd-33f7-440d-ac7d-3125e61cf9c4/scratchpad)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

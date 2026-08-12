@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CMA · Estrutura do Shell</title>
+
+<!-- ===== Importações — tokens, reset e componentes reutilizáveis ===== -->
+<link rel="stylesheet" href="../tokens/reset.css" />
+<link rel="stylesheet" href="../tokens/design-tokens.css" />
+<link rel="stylesheet" href="../components/badge.css" />
+<link rel="stylesheet" href="../components/button.css" />
+<link rel="stylesheet" href="../components/card.css" />
+<link rel="stylesheet" href="../components/input.css" />
+<link rel="stylesheet" href="../components/table.css" />
+
+<style>
+  /* ===== Layout do shell — grid fixo: header no topo, sidebar + conteúdo abaixo ===== */
+  .app-shell {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: var(--header-h) 1fr;
+  }
+
+  .app-body {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: 0;
+  }
+
+  .app-shell.sidebar-collapsed .app-body {
+    grid-template-columns: var(--sidebar-coll) 1fr;
+  }
+
+  /* Slots de include ficam "transparentes" ao grid — o filho real (header/aside) vira o item do grid */
+  #header-slot,
+  #sidebar-slot {
+    display: contents;
+  }
+
+  #content {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    padding: 20px;
+  }
+
+  .router-error {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-md);
+  }
+  .router-error__hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-lo);
+  }
+  .router-error code {
+    font-family: var(--font-mono);
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ===== Header ===== */
+  .app-header {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    height: var(--header-h);
+    background: #080814;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-header__accent {
+    width: 4px;
+    flex-shrink: 0;
+    background: var(--cptm-red);
+  }
+
+  .app-header__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(var(--sidebar-w) - 4px);
+    flex-shrink: 0;
+    padding: 0 16px;
+    overflow: hidden;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+
+  .app-shell.sidebar-collapsed .app-header__brand {
+    width: calc(var(--sidebar-coll) - 4px);
+    padding: 0 12px;
+  }
+
+  .app-header__logo {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    background: var(--cptm-red);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .app-header__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.2s ease;
+  }
+
+  .app-shell.sidebar-collapsed .app-header__brand-text {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app-header__brand-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-hi);
+  }
+
+  .app-header__brand-sub {
+    font-size: 10px;
+    color: var(--text-md);
+  }
+
+  .app-header__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .app-header__module {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-lo);
+    white-space: nowrap;
+  }
+
+  .app-header__sep {
+    color: var(--text-lo);
+  }
+
+  .app-header__page {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+
+  .app-header__clock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: var(--font-mono);
+    line-height: 1.3;
+    padding-right: 12px;
+    border-right: 1px solid var(--border);
+    margin-right: 2px;
+  }
+
+  .app-header__clock-time {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+  }
+
+  .app-header__clock-date {
+    font-size: 10px;
+    color: var(--text-md);
+  }
+
+  .app-header__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-md);
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .app-header__icon-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--border-hi);
+    color: var(--text-hi);
+  }
+
+  #icon-collapse {
+    transition: transform 0.25s ease;
+  }
+  .app-shell.sidebar-collapsed #icon-collapse {
+    transform: rotate(180deg);
+  }
+
+  .app-header__notif {
+    position: relative;
+  }
+
+  .app-header__notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--crit);
+    color: var(--text-hi);
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 999px;
+    line-height: 1;
+    border: 1px solid var(--surface-1);
+  }
+
+  .app-header__notif-badge[hidden] {
+    display: none;
+  }
+
+  .app-header__notif-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 340px;
+    max-height: 420px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-1);
+    border: 1px solid var(--border-hi);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .app-header__notif-panel[hidden] {
+    display: none;
+  }
+
+  .app-header__notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-hi);
+  }
+
+  .app-header__notif-mark {
+    background: none;
+    border: none;
+    color: var(--mon);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .app-header__notif-mark:hover {
+    text-decoration: underline;
+  }
+
+  .app-header__notif-list {
+    overflow-y: auto;
+  }
+
+  .notif-item {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .notif-item:last-child {
+    border-bottom: none;
+  }
+
+  .notif-item.is-unread {
+    background: var(--surface-2);
+  }
+
+  .notif-item__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    background: var(--text-md);
+  }
+
+  .notif-item__dot--parcial {
+    background: var(--parcial-hi);
+  }
+  .notif-item__dot--ok {
+    background: var(--ok-hi);
+  }
+  .notif-item__dot--alert {
+    background: var(--alert-hi);
+  }
+  .notif-item__dot--crit {
+    background: var(--crit-hi);
+  }
+
+  .notif-item__body {
+    min-width: 0;
+  }
+
+  .notif-item__title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-hi);
+    margin-bottom: 2px;
+  }
+
+  .notif-item__desc {
+    font-size: 11.5px;
+    color: var(--text-md);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .notif-item__time {
+    font-size: 10.5px;
+    color: var(--text-lo);
+  }
+
+  .app-header__user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+  }
+
+  .app-header__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mon);
+    color: var(--text-hi);
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .app-header__user-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .app-header__user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-hi);
+  }
+
+  .app-header__user-role {
+    font-size: 10px;
+    color: var(--text-md);
+  }
+
+  .app-header__tela2.is-sent {
+    background: var(--ok-lo);
+    border-color: var(--ok);
+    color: var(--ok-hi);
+  }
+
+  /* ===== Sidebar ===== */
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-1);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .app-sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+
+  .app-sidebar__section-label {
+    padding: 6px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-lo);
+    white-space: nowrap;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar__section-label {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .app-sidebar__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    color: var(--text-md);
+    text-decoration: none;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .app-sidebar__item:hover {
+    background: var(--surface-2);
+    color: var(--text-hi);
+  }
+
+  .app-sidebar__item.active {
+    background: var(--surface-2);
+    color: var(--text-hi);
+    box-shadow: inset 3px 0 0 var(--mod);
+  }
+
+  .app-sidebar__icon {
+    width: 20px;
+    font-size: 15px;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .app-sidebar__label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar__label {
+    display: none;
+  }
+
+  .app-sidebar__badge {
+    flex-shrink: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--crit-lo);
+    color: var(--crit-hi);
+    border: 1px solid var(--crit);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar__badge {
+    display: none;
+  }
+
+  .app-sidebar__section[data-module='mon'] {
+    --mod: var(--mon);
+  }
+  .app-sidebar__section[data-module='cad'] {
+    --mod: var(--cad);
+  }
+  .app-sidebar__section[data-module='rel'] {
+    --mod: var(--rel);
+  }
+  .app-sidebar__section[data-module='vw'] {
+    --mod: var(--vw);
+  }
+
+  .app-sidebar__divider {
+    height: 1px;
+    margin: 8px 16px;
+    background: var(--border);
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar__divider {
+    margin: 8px 12px;
+  }
+
+  /* Tooltip com o nome do item — visível apenas no modo colapsado */
+  .app-shell.sidebar-collapsed .app-sidebar__item:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    color: var(--text-hi);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .app-sidebar__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .app-sidebar__status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok-hi);
+    flex-shrink: 0;
+    animation: sidebar-pulse 1.6s ease-in-out infinite;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar__status-text {
+    display: none;
+  }
+
+  .app-sidebar__status-text {
+    font-size: 11px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  @keyframes sidebar-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(47, 212, 160, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(47, 212, 160, 0);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell" id="app">
+  <!-- Header -->
+  <div id="header-slot"></div>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div id="sidebar-slot"></div>
+
+    <!-- Conteúdo — preenchido pelo router -->
+    <main id="content"></main>
+  </div>
+</div>
+
+<!-- Fallback embutido dos fragmentos, usado quando fetch() não está disponível (ex.: file://) -->
+<template id="tpl-header">
+  <!-- ver frontend/shell/header.html — mantido em sincronia manualmente -->
+  <header class="app-header">
+    <div class="app-header__accent"></div>
+    <div class="app-header__brand">
+      <div class="app-header__logo" aria-hidden="true"></div>
+      <div class="app-header__brand-text">
+        <span class="app-header__brand-name">CPTM</span>
+        <span class="app-header__brand-sub">CMA · Monitoramento de Ativos</span>
+      </div>
+    </div>
+    <div class="app-header__title">
+      <span class="app-header__module" id="header-module">Monitoramento</span>
+      <span class="app-header__sep">&rsaquo;</span>
+      <span class="app-header__page" id="header-page">Dashboard</span>
+    </div>
+    <div class="app-header__actions">
+      <div class="app-header__clock" id="clock">
+        <span class="app-header__clock-time" id="clock-time">--:--:--</span>
+        <span class="app-header__clock-date" id="clock-date">--/--/----</span>
+      </div>
+      <button class="btn btn-ghost btn-sm app-header__tela2" id="btn-tela2" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        <span id="btn-tela2-label">Enviar p/ Tela 2</span>
+      </button>
+      <div class="app-header__notif" id="notif-wrap">
+        <button class="app-header__icon-btn" id="btn-notif" type="button" aria-haspopup="true" aria-expanded="false" title="Notificações">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="app-header__notif-badge" id="notif-badge">0</span>
+        </button>
+        <div class="app-header__notif-panel" id="notif-panel" hidden>
+          <div class="app-header__notif-header">
+            <span>Notificações</span>
+            <button class="app-header__notif-mark" id="notif-mark-all" type="button">Marcar todas como lidas</button>
+          </div>
+          <div class="app-header__notif-list" id="notif-list"></div>
+        </div>
+      </div>
+      <button class="app-header__icon-btn" id="btn-collapse" type="button" title="Colapsar menu">
+        <svg id="icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="11 17 6 12 11 7"></polyline>
+          <polyline points="18 17 13 12 18 7"></polyline>
+        </svg>
+      </button>
+      <div class="app-header__user">
+        <div class="app-header__avatar">SM</div>
+        <div class="app-header__user-text">
+          <span class="app-header__user-name">Saulo Lima</span>
+          <span class="app-header__user-role">Administrador</span>
+        </div>
+      </div>
+    </div>
+  </header>
+</template>
+
+<template id="tpl-sidebar">
+  <!-- ver frontend/shell/sidebar.html — mantido em sincronia manualmente -->
+  <aside class="app-sidebar" id="sidebar">
+    <nav class="app-sidebar__nav">
+      <div class="app-sidebar__section" data-module="mon">
+        <div class="app-sidebar__section-label">Monitoramento</div>
+        <a class="app-sidebar__item" href="/" data-route="/" data-tooltip="Dashboard"><span class="app-sidebar__icon">📊</span><span class="app-sidebar__label">Dashboard</span></a>
+        <a class="app-sidebar__item" href="/mapeamento" data-route="/mapeamento" data-tooltip="Mapeamento"><span class="app-sidebar__icon">🗺️</span><span class="app-sidebar__label">Mapeamento</span></a>
+        <a class="app-sidebar__item" href="/tabela" data-route="/tabela" data-tooltip="Tabela"><span class="app-sidebar__icon">📋</span><span class="app-sidebar__label">Tabela</span></a>
+        <a class="app-sidebar__item" href="/disponibilidade" data-route="/disponibilidade" data-tooltip="Disponibilidade"><span class="app-sidebar__icon">📈</span><span class="app-sidebar__label">Disponibilidade</span></a>
+        <a class="app-sidebar__item" href="/localidade" data-route="/localidade" data-tooltip="Localidade"><span class="app-sidebar__icon">📍</span><span class="app-sidebar__label">Localidade</span></a>
+        <a class="app-sidebar__item" href="/alarmes" data-route="/alarmes" data-tooltip="Alarmes"><span class="app-sidebar__icon">🚨</span><span class="app-sidebar__label">Alarmes</span><span class="app-sidebar__badge">2</span></a>
+      </div>
+      <div class="app-sidebar__divider"></div>
+      <div class="app-sidebar__section" data-module="cad">
+        <div class="app-sidebar__section-label">Cadastro</div>
+        <a class="app-sidebar__item" href="/cadastro/mda" data-route="/cadastro/mda" data-tooltip="MDA"><span class="app-sidebar__icon">📡</span><span class="app-sidebar__label">MDA</span></a>
+        <a class="app-sidebar__item" href="/cadastro/status" data-route="/cadastro/status" data-tooltip="Status"><span class="app-sidebar__icon">🏷️</span><span class="app-sidebar__label">Status</span></a>
+        <a class="app-sidebar__item" href="/cadastro/tipo-equipamento" data-route="/cadastro/tipo-equipamento" data-tooltip="Tipo de Equipamento"><span class="app-sidebar__icon">🔧</span><span class="app-sidebar__label">Tipo de Equipamento</span></a>
+        <a class="app-sidebar__item" href="/cadastro/equipamento" data-route="/cadastro/equipamento" data-tooltip="Equipamento"><span class="app-sidebar__icon">⚙️</span><span class="app-sidebar__label">Equipamento</span></a>
+        <a class="app-sidebar__item" href="/cadastro/notificacao" data-route="/cadastro/notificacao" data-tooltip="Notificação"><span class="app-sidebar__icon">🔔</span><span class="app-sidebar__label">Notificação</span></a>
+        <a class="app-sidebar__item" href="/cadastro/usuarios" data-route="/cadastro/usuarios" data-tooltip="Usuários"><span class="app-sidebar__icon">👤</span><span class="app-sidebar__label">Usuários</span></a>
+      </div>
+      <div class="app-sidebar__divider"></div>
+      <div class="app-sidebar__section" data-module="rel">
+        <div class="app-sidebar__section-label">Relatórios</div>
+        <a class="app-sidebar__item" href="/relatorios/disponibilidade" data-route="/relatorios/disponibilidade" data-tooltip="Disponibilidade"><span class="app-sidebar__icon">📄</span><span class="app-sidebar__label">Disponibilidade</span></a>
+        <a class="app-sidebar__item" href="/relatorios/historico-alarmes" data-route="/relatorios/historico-alarmes" data-tooltip="Hist. Alarmes"><span class="app-sidebar__icon">🗂️</span><span class="app-sidebar__label">Hist. Alarmes</span></a>
+        <a class="app-sidebar__item" href="/relatorios/mtbf-mttr" data-route="/relatorios/mtbf-mttr" data-tooltip="MTBF/MTTR"><span class="app-sidebar__icon">📉</span><span class="app-sidebar__label">MTBF/MTTR</span></a>
+        <a class="app-sidebar__item" href="/relatorios/resumo-mensal" data-route="/relatorios/resumo-mensal" data-tooltip="Resumo Mensal"><span class="app-sidebar__icon">📆</span><span class="app-sidebar__label">Resumo Mensal</span></a>
+        <a class="app-sidebar__item" href="/relatorios/indisponibilidade-linha" data-route="/relatorios/indisponibilidade-linha" data-tooltip="Indisp. por Linha"><span class="app-sidebar__icon">🚇</span><span class="app-sidebar__label">Indisp. por Linha</span></a>
+      </div>
+      <div class="app-sidebar__divider"></div>
+      <div class="app-sidebar__section" data-module="vw">
+        <div class="app-sidebar__section-label">VideoWall</div>
+        <a class="app-sidebar__item" href="/videowall" data-route="/videowall" data-tooltip="VideoWall"><span class="app-sidebar__icon">📺</span><span class="app-sidebar__label">VideoWall</span></a>
+      </div>
+    </nav>
+    <div class="app-sidebar__footer">
+      <span class="app-sidebar__status-dot"></span>
+      <span class="app-sidebar__status-text">Sistema online</span>
+    </div>
+  </aside>
+</template>
+
+<!-- ===== Scripts — módulos do shell, inicializados após a montagem dos fragmentos ===== -->
+<script src="../js/clock.js"></script>
+<script src="../js/notifications.js"></script>
+<script src="../js/router.js"></script>
+<script>
+  /* Bootstrap do shell — inclui header/sidebar (com fallback offline) e inicializa os módulos */
+  (function () {
+    async function includeFragment(url, targetId, fallbackTemplateId) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        target.innerHTML = await res.text();
+      } catch (err) {
+        console.warn(`[shell] fetch de "${url}" indisponível (comum em file://) — usando fragmento embutido.`, err);
+        const tpl = document.getElementById(fallbackTemplateId);
+        if (tpl) target.innerHTML = tpl.innerHTML;
+      }
+    }
+
+    function initShellControls() {
+      const app = document.getElementById('app');
+      const collapseBtn = document.getElementById('btn-collapse');
+      const tela2Btn = document.getElementById('btn-tela2');
+      const tela2Label = document.getElementById('btn-tela2-label');
+
+      if (collapseBtn && app) {
+        collapseBtn.addEventListener('click', () => {
+          app.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      if (tela2Btn && tela2Label) {
+        const originalLabel = tela2Label.textContent;
+        tela2Btn.addEventListener('click', () => {
+          const modulo = document.getElementById('header-module')?.textContent ?? '';
+          const pagina = document.getElementById('header-page')?.textContent ?? '';
+          const payload = { modulo, pagina, path: window.CMA.router ? window.CMA.router.currentPath : window.location.pathname };
+
+          console.log('[tela2:enviar]', payload);
+          window.dispatchEvent(new CustomEvent('tela2:enviar', { detail: payload }));
+
+          tela2Btn.disabled = true;
+          tela2Btn.classList.add('is-sent');
+          tela2Label.textContent = 'Enviado ✓';
+          setTimeout(() => {
+            tela2Btn.disabled = false;
+            tela2Btn.classList.remove('is-sent');
+            tela2Label.textContent = originalLabel;
+          }, 2000);
+        });
+      }
+    }
+
+    async function boot() {
+      await Promise.all([
+        includeFragment('header.html', 'header-slot', 'tpl-header'),
+        includeFragment('sidebar.html', 'sidebar-slot', 'tpl-sidebar'),
+      ]);
+      window.CMA.initClock();
+      window.CMA.initNotifications();
+      initShellControls();
+      window.CMA.initRouter();
+    }
+
+    boot();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!-- ==================================================================
+     Mapeamento — Monitoramento (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página — eyebrow/título/descrição ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mon);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  /* ===== Layout geral — mapa (flex) + painel lateral (300px fixo) ===== */
+  .map-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .map-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .map-side {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ===== Bloco 1 — Mapa esquemático SVG ===== */
+  .map-svg-wrap {
+    position: relative;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+
+  .map-svg-wrap svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+
+  .map-station-dot {
+    fill: var(--surface-2);
+    stroke: var(--border-hi);
+    stroke-width: 2;
+  }
+
+  .map-station-label {
+    fill: var(--text-md);
+    font-size: 11px;
+    font-family: var(--font);
+    text-anchor: middle;
+  }
+
+  .map-connector {
+    stroke: var(--border-hi);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+  }
+
+  .map-pin {
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  .map-pin:hover {
+    transform: scale(1.18);
+  }
+
+  .map-pin.is-parcial {
+    stroke: var(--parcial-hi);
+    stroke-width: 2;
+    stroke-dasharray: 3 2;
+  }
+
+  .map-pin.is-hidden {
+    opacity: 0.12;
+    pointer-events: none;
+  }
+
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .map-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .map-legend__swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--ok-hi);
+  }
+
+  .map-legend__swatch--parcial {
+    background: transparent;
+    border: 2px dashed var(--parcial-hi);
+  }
+
+  /* Tooltip flutuante — segue o cursor sobre o pin em hover */
+  .map-tooltip {
+    position: absolute;
+    display: none;
+    min-width: 180px;
+    max-width: 240px;
+    padding: 8px 10px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-md);
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .map-tooltip__title {
+    color: var(--text-hi);
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  /* ===== Bloco 2 — Painel de filtros ===== */
+  .filter-field {
+    margin-bottom: 12px;
+  }
+
+  .filter-field:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .filter-actions .btn {
+    flex: 1;
+  }
+
+  /* ===== Bloco 3 — Tabela totalizadora ===== */
+  .totals-table tfoot td {
+    color: var(--text-hi);
+    font-weight: 700;
+    border-top: 1px solid var(--border-hi);
+  }
+
+  /* ===== Responsivo — empilha painel lateral abaixo do mapa em telas estreitas ===== */
+  @media (max-width: 900px) {
+    .map-layout {
+      flex-direction: column;
+    }
+    .map-side {
+      width: 100%;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Monitoramento</div>
+  <h1 class="page-header__title">Mapeamento</h1>
+  <p class="page-header__desc">Localização geográfica dos ativos monitorados — Linha 10</p>
+</div>
+
+<!-- ===== Layout — mapa + painel lateral ===== -->
+<div class="map-layout">
+
+  <!-- ===== Bloco 1 — Mapa esquemático da Linha 10 ===== -->
+  <div class="map-main">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Esquema da Linha 10</div>
+          <div class="card-subtitle">Estações com ativos monitorados — passe o mouse sobre um pin</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="map-svg-wrap" id="map-svg-wrap">
+          <svg viewBox="0 0 900 210" xmlns="http://www.w3.org/2000/svg" id="map-svg">
+            <!-- Traçado da linha -->
+            <line x1="60" y1="130" x2="820" y2="130" stroke="var(--border-hi)" stroke-width="3" stroke-linecap="round"></line>
+
+            <!-- Estações -->
+            <circle class="map-station-dot" cx="80" cy="130" r="8"></circle>
+            <text class="map-station-label" x="80" y="158">Luz</text>
+
+            <circle class="map-station-dot" cx="260" cy="130" r="8"></circle>
+            <text class="map-station-label" x="260" y="158">Brás</text>
+
+            <circle class="map-station-dot" cx="440" cy="130" r="8"></circle>
+            <text class="map-station-label" x="440" y="158">Tamanduateí</text>
+
+            <circle class="map-station-dot" cx="620" cy="130" r="8"></circle>
+            <text class="map-station-label" x="620" y="158">Cangaíba</text>
+
+            <circle class="map-station-dot" cx="800" cy="130" r="8"></circle>
+            <text class="map-station-label" x="800" y="158">Guaianases</text>
+
+            <!-- Conector do pin "Linha 10 (trecho)" — não fica sobre uma estação específica -->
+            <line class="map-connector" x1="530" y1="72" x2="530" y2="130"></line>
+
+            <!-- ===== Pins dos ativos ===== -->
+            <!-- Luz — Sala Técnica LUZ -->
+            <line class="map-connector" x1="80" y1="72" x2="80" y2="122"></line>
+            <circle class="map-pin is-parcial" r="12" cx="80" cy="72" fill="var(--ok-hi)"
+              data-id="1" data-name="Mon. Fibra Ebilock Luz L10" data-local="Sala Técnica LUZ"
+              data-cat="Fibra" data-status="Online" data-mat="Parcial"></circle>
+
+            <!-- Brás — CCO Brás + Brás Linha 10 -->
+            <line class="map-connector" x1="246" y1="72" x2="260" y2="122"></line>
+            <circle class="map-pin" r="12" cx="246" cy="72" fill="var(--ok-hi)"
+              data-id="5" data-name="Sistemas Elétricos" data-local="CCO Brás"
+              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
+
+            <line class="map-connector" x1="278" y1="72" x2="260" y2="122"></line>
+            <circle class="map-pin" r="12" cx="278" cy="72" fill="var(--ok-hi)"
+              data-id="7" data-name="Monitoramento AMV" data-local="Brás — Linha 10"
+              data-cat="Sinalização" data-status="Online" data-mat="Concluído"></circle>
+
+            <!-- Tamanduateí — 4 ativos -->
+            <line class="map-connector" x1="404" y1="72" x2="440" y2="122"></line>
+            <circle class="map-pin" r="12" cx="404" cy="72" fill="var(--ok-hi)"
+              data-id="2" data-name="Sist. Acionamento de Bombas" data-local="Est. Tamanduateí"
+              data-cat="Hidráulico" data-status="Online" data-mat="Concluído"></circle>
+
+            <line class="map-connector" x1="428" y1="72" x2="440" y2="122"></line>
+            <circle class="map-pin" r="12" cx="428" cy="72" fill="var(--ok-hi)"
+              data-id="3" data-name="Sistemas Elétricos" data-local="Est. Tamanduateí"
+              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
+
+            <line class="map-connector" x1="452" y1="72" x2="440" y2="122"></line>
+            <circle class="map-pin" r="12" cx="452" cy="72" fill="var(--ok-hi)"
+              data-id="4" data-name="Grupo Gerador" data-local="Est. Tamanduateí"
+              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
+
+            <line class="map-connector" x1="476" y1="72" x2="440" y2="122"></line>
+            <circle class="map-pin" r="12" cx="476" cy="72" fill="var(--ok-hi)"
+              data-id="6" data-name="Monitoramento CTC" data-local="Est. Tamanduateí"
+              data-cat="Sinalização" data-status="Online" data-mat="Concluído"></circle>
+
+            <!-- Trecho Linha 10 — STO L10 (não vinculado a uma única estação) -->
+            <circle class="map-pin is-parcial" r="12" cx="530" cy="72" fill="var(--ok-hi)"
+              data-id="8" data-name="STO L10" data-local="Linha 10 (trecho)"
+              data-cat="Fibra/Comun." data-status="Online" data-mat="Parcial"></circle>
+          </svg>
+
+          <!-- Tooltip flutuante -->
+          <div class="map-tooltip" id="map-tooltip">
+            <div class="map-tooltip__title" id="map-tooltip-title"></div>
+            <div id="map-tooltip-body"></div>
+          </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="map-legend">
+          <span class="map-legend__item"><span class="map-legend__swatch"></span>Online</span>
+          <span class="map-legend__item"><span class="map-legend__swatch map-legend__swatch--parcial"></span>Maturidade parcial</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Bloco 2 e 3 — Painel lateral: filtros + totalizador ===== -->
+  <div class="map-side">
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Filtros</div>
+      </div>
+      <div class="card-body">
+        <div class="filter-field">
+          <label class="form-label" for="flt-categoria">Categoria</label>
+          <select class="select" id="flt-categoria">
+            <option value="">Todas</option>
+            <option value="Fibra">Fibra</option>
+            <option value="Hidráulico">Hidráulico</option>
+            <option value="Energia">Energia</option>
+            <option value="Sinalização">Sinalização</option>
+            <option value="Fibra/Comun.">Fibra/Comun.</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label class="form-label" for="flt-status">Status</label>
+          <select class="select" id="flt-status">
+            <option value="">Todos</option>
+            <option value="Online">Online</option>
+            <option value="Parcial">Parcial</option>
+            <option value="Alerta">Alerta</option>
+            <option value="Offline">Offline</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label class="form-label" for="flt-maturidade">Maturidade</label>
+          <select class="select" id="flt-maturidade">
+            <option value="">Todas</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Parcial">Parcial</option>
+            <option value="Em Implantação">Em Implantação</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="flt-aplicar">Aplicar</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="flt-limpar">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela totalizadora -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Totais por categoria</div>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <table class="table totals-table" id="totals-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Qtd.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Fibra</td><td class="td-mono" data-cat-total="Fibra">1</td></tr>
+            <tr><td>Hidráulico</td><td class="td-mono" data-cat-total="Hidráulico">1</td></tr>
+            <tr><td>Energia</td><td class="td-mono" data-cat-total="Energia">3</td></tr>
+            <tr><td>Sinalização</td><td class="td-mono" data-cat-total="Sinalização">2</td></tr>
+            <tr><td>Fibra/Comun.</td><td class="td-mono" data-cat-total="Fibra/Comun.">1</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td>Total geral</td><td class="td-mono" id="totals-geral">8</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Tooltip — segue o pin em hover/mousemove ===== */
+  var wrap = document.getElementById('map-svg-wrap');
+  var tooltip = document.getElementById('map-tooltip');
+  var tooltipTitle = document.getElementById('map-tooltip-title');
+  var tooltipBody = document.getElementById('map-tooltip-body');
+  var pins = Array.prototype.slice.call(document.querySelectorAll('.map-pin'));
+
+  function showTooltip(pin, evt) {
+    var wrapRect = wrap.getBoundingClientRect();
+    tooltipTitle.textContent = pin.getAttribute('data-name');
+    tooltipBody.innerHTML =
+      pin.getAttribute('data-local') + '<br>' +
+      'Status: <strong style="color: var(--ok-hi)">' + pin.getAttribute('data-status') + '</strong> · ' +
+      'Maturidade: ' + pin.getAttribute('data-mat');
+    tooltip.style.display = 'block';
+
+    var x = evt.clientX - wrapRect.left + 14;
+    var y = evt.clientY - wrapRect.top + 14;
+    var maxX = wrap.clientWidth - tooltip.offsetWidth - 8;
+    if (x > maxX) x = evt.clientX - wrapRect.left - tooltip.offsetWidth - 14;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+  }
+
+  pins.forEach(function (pin) {
+    pin.addEventListener('mouseenter', function (evt) { showTooltip(pin, evt); });
+    pin.addEventListener('mousemove', function (evt) { showTooltip(pin, evt); });
+    pin.addEventListener('mouseleave', hideTooltip);
+  });
+
+  /* ===== Filtros — categoria / status / maturidade aplicados aos pins e totais ===== */
+  var selCategoria = document.getElementById('flt-categoria');
+  var selStatus = document.getElementById('flt-status');
+  var selMaturidade = document.getElementById('flt-maturidade');
+  var btnAplicar = document.getElementById('flt-aplicar');
+  var btnLimpar = document.getElementById('flt-limpar');
+  var totalGeralEl = document.getElementById('totals-geral');
+  var totalCells = Array.prototype.slice.call(document.querySelectorAll('[data-cat-total]'));
+
+  function applyFilters() {
+    var cat = selCategoria.value;
+    var status = selStatus.value;
+    var mat = selMaturidade.value;
+
+    var counts = {};
+    var totalVisible = 0;
+
+    pins.forEach(function (pin) {
+      var matchCat = !cat || pin.getAttribute('data-cat') === cat;
+      var matchStatus = !status || pin.getAttribute('data-status') === status;
+      var matchMat = !mat || pin.getAttribute('data-mat') === mat;
+      var visible = matchCat && matchStatus && matchMat;
+
+      pin.classList.toggle('is-hidden', !visible);
+
+      if (visible) {
+        var pinCat = pin.getAttribute('data-cat');
+        counts[pinCat] = (counts[pinCat] || 0) + 1;
+        totalVisible++;
+      }
+    });
+
+    totalCells.forEach(function (cell) {
+      var pinCat = cell.getAttribute('data-cat-total');
+      cell.textContent = counts[pinCat] || 0;
+    });
+    totalGeralEl.textContent = totalVisible;
+  }
+
+  function clearFilters() {
+    selCategoria.value = '';
+    selStatus.value = '';
+    selMaturidade.value = '';
+    applyFilters();
+  }
+
+  btnAplicar.addEventListener('click', applyFilters);
+  btnLimpar.addEventListener('click', clearFilters);
+})();
+</script>

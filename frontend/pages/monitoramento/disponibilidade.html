@@ -1,0 +1,395 @@
+<!-- ==================================================================
+     Disponibilidade — Monitoramento (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mon);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filters-grid + .filters-grid {
+    margin-top: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Gráfico de disponibilidade ===== */
+  .avail-chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 320px;
+  }
+
+  .avail-chart-wrap canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .chart-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chart-legend__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .chart-legend__dot--parcial {
+    border-radius: 2px;
+    background: transparent;
+    border: 2px dashed var(--parcial-hi);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 1100px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Monitoramento</div>
+  <h1 class="page-header__title">Disponibilidade</h1>
+  <p class="page-header__desc">Histórico de disponibilidade dos ativos por período</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-data-ini">Data Inicial</label>
+        <input type="date" class="input" id="flt-data-ini" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-data-fim">Data Final</label>
+        <input type="date" class="input" id="flt-data-fim" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipo">Tipo de Equipamento</label>
+        <select class="select" id="flt-tipo">
+          <option value="">Todos</option>
+          <option value="Fibra">Fibra</option>
+          <option value="Hidráulico">Hidráulico</option>
+          <option value="Energia">Energia</option>
+          <option value="Sinalização">Sinalização</option>
+          <option value="Fibra/Comun.">Fibra/Comun.</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-codigo">Código / Tag</label>
+        <input type="text" class="input" id="flt-codigo" placeholder="Ex.: FB-EBL-01" />
+      </div>
+    </div>
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-linha">Linha</label>
+        <select class="select" id="flt-linha">
+          <option value="">Todas</option>
+          <option value="L10">Linha 10</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipolocal">Tipo de Local</label>
+        <select class="select" id="flt-tipolocal">
+          <option value="">Todos</option>
+          <option value="Sala Técnica">Sala Técnica</option>
+          <option value="Estação">Estação</option>
+          <option value="CCO">CCO</option>
+          <option value="Trecho">Trecho</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-local">Local</label>
+        <input type="text" class="input" id="flt-local" placeholder="Buscar por local..." />
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      <button type="button" class="btn btn-ghost" id="btn-exportar">Exportar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Gráfico de disponibilidade ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Disponibilidade por ativo</div>
+      <div class="card-subtitle">Período operante ao longo do dia (0h – 23h)</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="avail-chart-wrap" id="avail-chart-wrap">
+      <canvas id="avail-chart"></canvas>
+    </div>
+    <div class="chart-legend">
+      <span class="chart-legend__item"><span class="chart-legend__dot" style="background: var(--ok-hi)"></span>Online</span>
+      <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--parcial"></span>Parcial</span>
+      <span class="chart-legend__item"><span class="chart-legend__dot" style="background: var(--crit-hi)"></span>Inoperante</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado — mesmos 8 ativos, período operante em horas ===== */
+  var ATIVOS = [
+    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', codigo: 'FB-EBL-01', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', linha: 'L10', start: 0, end: 24, partial: [0, 6] },
+    { id: 2, nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', codigo: 'HID-BMB-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
+    { id: 3, nome: 'Sistemas Elétricos (Tamanduateí)', tipo: 'Energia', codigo: 'ENE-SE-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
+    { id: 4, nome: 'Grupo Gerador', tipo: 'Energia', codigo: 'ENE-GG-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
+    { id: 5, nome: 'Sistemas Elétricos (Brás)', tipo: 'Energia', codigo: 'ENE-SE-BRA', local: 'CCO Brás', tipoLocal: 'CCO', linha: 'L10', start: 0, end: 24, partial: null },
+    { id: 6, nome: 'Monitoramento CTC', tipo: 'Sinalização', codigo: 'SIN-CTC-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
+    { id: 7, nome: 'Monitoramento AMV', tipo: 'Sinalização', codigo: 'SIN-AMV-01', local: 'Brás — Linha 10', tipoLocal: 'Estação', linha: 'L10', start: 6, end: 22, partial: null },
+    { id: 8, nome: 'STO L10', tipo: 'Fibra/Comun.', codigo: 'FB-STO-L10', local: 'Linha 10', tipoLocal: 'Trecho', linha: 'L10', start: 0, end: 24, partial: [18, 24] }
+  ];
+
+  var state = { rows: ATIVOS.slice() };
+
+  /* ===== Bloco 1 — datas padrão: últimos 7 dias ===== */
+  var dataIni = document.getElementById('flt-data-ini');
+  var dataFim = document.getElementById('flt-data-fim');
+  function toISODate(d) { return d.toISOString().slice(0, 10); }
+  var hoje = new Date();
+  var seteDiasAtras = new Date();
+  seteDiasAtras.setDate(hoje.getDate() - 7);
+  dataFim.value = toISODate(hoje);
+  dataIni.value = toISODate(seteDiasAtras);
+
+  /* ===== Bloco 1 — filtros ===== */
+  function applyFilters() {
+    var tipo = document.getElementById('flt-tipo').value;
+    var codigo = document.getElementById('flt-codigo').value.trim().toLowerCase();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var linha = document.getElementById('flt-linha').value;
+    var tipoLocal = document.getElementById('flt-tipolocal').value;
+    var local = document.getElementById('flt-local').value.trim().toLowerCase();
+
+    state.rows = ATIVOS.filter(function (a) {
+      if (tipo && a.tipo !== tipo) return false;
+      if (codigo && a.codigo.toLowerCase().indexOf(codigo) === -1) return false;
+      if (nome && a.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (linha && a.linha !== linha) return false;
+      if (tipoLocal && a.tipoLocal !== tipoLocal) return false;
+      if (local && a.local.toLowerCase().indexOf(local) === -1) return false;
+      return true;
+    });
+
+    renderChart();
+  }
+
+  function clearFilters() {
+    ['flt-codigo', 'flt-nome', 'flt-local'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    ['flt-tipo', 'flt-linha', 'flt-tipolocal'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    dataFim.value = toISODate(hoje);
+    dataIni.value = toISODate(seteDiasAtras);
+    state.rows = ATIVOS.slice();
+    renderChart();
+  }
+
+  function exportCSV() {
+    var header = ['Nome', 'Tipo', 'Local', 'Início Operante', 'Fim Operante', 'Maturidade Parcial'];
+    var lines = [header.join(';')];
+    state.rows.forEach(function (a) {
+      var parcial = a.partial ? (a.partial[0] + 'h-' + a.partial[1] + 'h') : '-';
+      lines.push([a.nome, a.tipo, a.local, a.start + 'h', a.end + 'h', parcial].join(';'));
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'disponibilidade-linha10.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+  document.getElementById('btn-exportar').addEventListener('click', exportCSV);
+
+  /* ===== Bloco 2 — gráfico canvas (linha do tempo horizontal por ativo) ===== */
+  var rootStyle = getComputedStyle(document.documentElement);
+  function cssVar(name) { return rootStyle.getPropertyValue(name).trim(); }
+
+  var canvas = document.getElementById('avail-chart');
+  var ctx = canvas.getContext('2d');
+  var container = document.getElementById('avail-chart-wrap');
+
+  function truncateLabel(ctx2, text, maxWidth) {
+    if (ctx2.measureText(text).width <= maxWidth) return text;
+    var t = text;
+    while (t.length > 1 && ctx2.measureText(t + '…').width > maxWidth) {
+      t = t.slice(0, -1);
+    }
+    return t + '…';
+  }
+
+  function draw(ctxD, w, h) {
+    ctxD.clearRect(0, 0, w, h);
+
+    var rows = state.rows;
+    var padL = 172, padR = 12, padT = 8, padB = 22;
+    var plotW = w - padL - padR;
+    var plotH = h - padT - padB;
+    var n = Math.max(rows.length, 1);
+    var rowH = plotH / n;
+
+    var gridColor = cssVar('--border');
+    var textMd = cssVar('--text-md');
+    var textHi = cssVar('--text-hi');
+    var okColor = cssVar('--ok-hi');
+    var parcialColor = cssVar('--parcial-hi');
+    var fontFamily = cssVar('--font');
+
+    /* Grade vertical + rótulos de hora (a cada 3h) */
+    ctxD.font = '500 9px ' + fontFamily;
+    ctxD.fillStyle = textMd;
+    ctxD.textAlign = 'center';
+    ctxD.textBaseline = 'top';
+    for (var hh = 0; hh <= 24; hh += 3) {
+      var x = padL + (hh / 24) * plotW;
+      ctxD.beginPath();
+      ctxD.moveTo(x, padT);
+      ctxD.lineTo(x, padT + plotH);
+      ctxD.strokeStyle = gridColor;
+      ctxD.lineWidth = 1;
+      ctxD.stroke();
+      ctxD.fillText(hh + 'h', x, padT + plotH + 6);
+    }
+
+    /* Linhas por ativo — rótulo + barra de disponibilidade */
+    rows.forEach(function (a, i) {
+      var y = padT + i * rowH;
+      var barH = Math.min(18, rowH * 0.5);
+      var barY = y + rowH / 2 - barH / 2;
+
+      ctxD.textAlign = 'left';
+      ctxD.textBaseline = 'middle';
+      ctxD.font = '600 11px ' + fontFamily;
+      ctxD.fillStyle = textHi;
+      ctxD.fillText(truncateLabel(ctxD, a.nome, padL - 12), 0, y + rowH / 2);
+
+      var barX = padL + (a.start / 24) * plotW;
+      var barW = ((a.end - a.start) / 24) * plotW;
+      ctxD.fillStyle = okColor;
+      ctxD.fillRect(barX, barY, barW, barH);
+
+      if (a.partial) {
+        var segX = padL + (a.partial[0] / 24) * plotW;
+        var segW = ((a.partial[1] - a.partial[0]) / 24) * plotW;
+        ctxD.save();
+        ctxD.setLineDash([4, 3]);
+        ctxD.strokeStyle = parcialColor;
+        ctxD.lineWidth = 2;
+        ctxD.strokeRect(segX + 1, barY + 1, segW - 2, barH - 2);
+        ctxD.restore();
+      }
+    });
+  }
+
+  function renderChart() {
+    var rect = container.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var w = Math.max(1, Math.floor(rect.width));
+    var h = Math.max(1, Math.floor(rect.height));
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(ctx, w, h);
+  }
+
+  renderChart();
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(function () { renderChart(); });
+    ro.observe(container);
+  } else {
+    window.addEventListener('resize', renderChart);
+  }
+})();
+</script>

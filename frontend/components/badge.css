@@ -1,0 +1,103 @@
+/* Badges — status operacional de ativos e maturidade de implantação do sistema */
+
+/* Badge de status operacional (ok / alert / crit / offline) */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge-status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge-status.status-ok {
+  background: var(--ok-lo);
+  color: var(--ok-hi);
+  border: 1px solid var(--ok);
+}
+.badge-status.status-ok .dot {
+  background: var(--ok-hi);
+}
+
+.badge-status.status-alert {
+  background: var(--alert-lo);
+  color: var(--alert-hi);
+  border: 1px solid var(--alert);
+}
+.badge-status.status-alert .dot {
+  background: var(--alert-hi);
+}
+
+.badge-status.status-crit {
+  background: var(--crit-lo);
+  color: var(--crit-hi);
+  border: 1px solid var(--crit);
+}
+.badge-status.status-crit .dot {
+  background: var(--crit-hi);
+  animation: badge-pulse 1.2s ease-in-out infinite;
+}
+
+.badge-status.status-offline {
+  background: var(--offline-lo);
+  color: var(--text-md);
+  border: 1px solid var(--offline);
+}
+.badge-status.status-offline .dot {
+  background: var(--text-md);
+}
+
+/* Pulsação do dot — reservada ao estado crítico, para chamar atenção sem poluir o restante da UI */
+@keyframes badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(240, 80, 80, 0.6);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px rgba(240, 80, 80, 0);
+  }
+}
+
+/* Badge de maturidade (concluido / parcial / implantacao) — menor, sem dot */
+.badge-maturidade {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid var(--border-hi);
+}
+
+.badge-maturidade.maturidade-concluido {
+  background: var(--ok-lo);
+  color: var(--ok-hi);
+  border-color: var(--ok);
+}
+
+.badge-maturidade.maturidade-parcial {
+  background: var(--parcial-lo);
+  color: var(--parcial-hi);
+  border-color: var(--parcial);
+}
+
+.badge-maturidade.maturidade-implantacao {
+  background: var(--alert-lo);
+  color: var(--alert-hi);
+  border-color: var(--alert);
+}

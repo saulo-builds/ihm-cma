@@ -1,0 +1,695 @@
+<!-- ==================================================================
+     MDA — Cadastro (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cad);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Card de filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Card de resultados ===== */
+  .results-count {
+    font-size: 12px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== Toggle Ativo/Inativo ===== */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-md);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: color-mix(in srgb, var(--ok) 30%, transparent);
+    border-color: var(--ok);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(18px);
+    background: var(--ok-hi);
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text-hi);
+  }
+
+  /* ===== Modais (<dialog> nativo) ===== */
+  dialog.modal {
+    border: none;
+    padding: 0;
+    width: 480px;
+    max-width: 92vw;
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    color: var(--text-hi);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  dialog.modal::backdrop {
+    background: rgba(4, 4, 12, 0.7);
+  }
+
+  dialog.modal[open] {
+    animation: modal-in 0.15s ease;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-md);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-hi);
+  }
+
+  .modal-body {
+    padding: 18px;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .form-field.full {
+    grid-column: 1 / -1;
+  }
+
+  /* ===== Modal Detalhar — visualização somente leitura ===== */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .detail-field__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-md);
+    margin-bottom: 4px;
+  }
+
+  .detail-field__value {
+    font-size: 14px;
+    color: var(--text-hi);
+    font-weight: 600;
+  }
+
+  .detail-subtitle {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-md);
+    margin-bottom: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .linked-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .linked-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-hi);
+  }
+
+  .linked-list li::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ok-hi);
+    flex-shrink: 0;
+  }
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  dialog.modal-confirm {
+    width: 380px;
+  }
+
+  .confirm-body {
+    padding: 22px 18px;
+    text-align: center;
+  }
+
+  .confirm-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--crit-lo);
+    border: 1px solid var(--crit);
+    color: var(--crit-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .confirm-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+    margin-bottom: 4px;
+  }
+
+  .confirm-subtext {
+    font-size: 12.5px;
+    color: var(--text-md);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 1100px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid,
+    .form-grid,
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Cadastro</div>
+  <h1 class="page-header__title">MDA</h1>
+  <p class="page-header__desc">Monitor de Ativos — dispositivos de coleta de telemetria</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-id">ID</label>
+        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-mac">MAC Address</label>
+        <input type="text" class="input" id="flt-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-status">Status</label>
+        <select class="select" id="flt-status">
+          <option value="">Todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Resultados ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Resultados</div>
+      <div class="card-subtitle" id="results-count">3 registros encontrados</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table" id="mda-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>MAC Address</th>
+          <th>Nome</th>
+          <th>Última Comunicação</th>
+          <th>Qtd. Equipamentos</th>
+          <th>Ativo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="mda-tbody">
+        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="table-empty" hidden>Nenhum MDA encontrado para os filtros aplicados.</div>
+  </div>
+</div>
+
+<!-- ===== Modal Incluir / Alterar ===== -->
+<dialog class="modal" id="modal-form">
+  <form method="dialog">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-form-title">Incluir MDA</div>
+      <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field full">
+          <label class="form-label" for="form-mac">MAC Address</label>
+          <input type="text" class="input" id="form-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
+        </div>
+        <div class="form-field full">
+          <label class="form-label" for="form-nome">Nome</label>
+          <input type="text" class="input" id="form-nome" placeholder="Ex.: MDA-TAM-01" />
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Ativo</label>
+          <label class="toggle">
+            <input type="checkbox" id="form-ativo" checked />
+            <span class="toggle-track"></span>
+            <span class="toggle-label" id="form-ativo-label">Ativo</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== Modal Detalhar ===== -->
+<dialog class="modal" id="modal-detail">
+  <div class="modal-header">
+    <div class="modal-title">Detalhes do MDA</div>
+    <button type="button" class="modal-close" data-close="modal-detail" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid">
+      <div>
+        <div class="detail-field__label">ID</div>
+        <div class="detail-field__value" id="det-id">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Ativo</div>
+        <div class="detail-field__value" id="det-ativo">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">MAC Address</div>
+        <div class="detail-field__value" id="det-mac">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Nome</div>
+        <div class="detail-field__value" id="det-nome">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Última Comunicação</div>
+        <div class="detail-field__value" id="det-comunicacao">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Qtd. Equipamentos</div>
+        <div class="detail-field__value" id="det-qtd">—</div>
+      </div>
+    </div>
+    <div class="detail-subtitle">Equipamentos vinculados</div>
+    <ul class="linked-list" id="det-equipamentos"></ul>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-detail">Fechar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal de confirmação de exclusão ===== -->
+<dialog class="modal modal-confirm" id="modal-confirm">
+  <div class="confirm-body">
+    <div class="confirm-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      </svg>
+    </div>
+    <div class="confirm-text">Confirmar exclusão?</div>
+    <div class="confirm-subtext" id="confirm-subtext">Esta ação não poderá ser desfeita.</div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-confirm">Cancelar</button>
+    <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao">Confirmar</button>
+  </div>
+</dialog>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado dos MDAs ===== */
+  var MDAS = [
+    { id: 1, mac: 'A4:CF:12:3B:00:01', nome: 'MDA-TAM-01', comunicacao: '11/08/2026 21:30', qtd: 4, ativo: true, equipamentos: ['HID-TAM-01 · Sist. Acionamento de Bombas', 'ELE-TAM-01 · Sistemas Elétricos', 'GER-TAM-01 · Grupo Gerador', 'CTC-TAM-01 · Monitoramento CTC'] },
+    { id: 2, mac: 'A4:CF:12:3B:00:02', nome: 'MDA-BRS-01', comunicacao: '11/08/2026 21:28', qtd: 2, ativo: true, equipamentos: ['ELE-BRS-01 · Sistemas Elétricos', 'AMV-BRS-01 · Monitoramento AMV'] },
+    { id: 3, mac: 'A4:CF:12:3B:00:03', nome: 'MDA-LUZ-01', comunicacao: '11/08/2026 20:15', qtd: 1, ativo: true, equipamentos: ['FB-EBL-01 · Mon. Fibra Ebilock Luz L10'] }
+  ];
+
+  var nextId = MDAS.length + 1;
+  var state = { filtered: MDAS.slice() };
+  var editingId = null;
+  var deletingId = null;
+
+  var tbody = document.getElementById('mda-tbody');
+  var emptyEl = document.getElementById('table-empty');
+  var countEl = document.getElementById('results-count');
+
+  function findById(id) {
+    for (var i = 0; i < MDAS.length; i++) {
+      if (MDAS[i].id === id) return MDAS[i];
+    }
+    return null;
+  }
+
+  function render() {
+    tbody.innerHTML = state.filtered.map(function (m) {
+      return '<tr>' +
+        '<td class="td-mono">' + m.id + '</td>' +
+        '<td class="td-mono">' + m.mac + '</td>' +
+        '<td class="hi">' + m.nome + '</td>' +
+        '<td>' + m.comunicacao + '</td>' +
+        '<td class="td-mono">' + m.qtd + '</td>' +
+        '<td>' + (m.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + m.id + '">Detalhar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + m.id + '">Alterar</button>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-action="excluir" data-id="' + m.id + '">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    tbody.parentElement.hidden = state.filtered.length === 0;
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var id = document.getElementById('flt-id').value.trim();
+    var mac = document.getElementById('flt-mac').value.trim().toLowerCase();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var status = document.getElementById('flt-status').value;
+
+    state.filtered = MDAS.filter(function (m) {
+      if (id && String(m.id) !== id) return false;
+      if (mac && m.mac.toLowerCase().indexOf(mac) === -1) return false;
+      if (nome && m.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (status === 'Ativo' && !m.ativo) return false;
+      if (status === 'Inativo' && m.ativo) return false;
+      return true;
+    });
+    render();
+  }
+
+  function clearFilters() {
+    document.getElementById('flt-id').value = '';
+    document.getElementById('flt-mac').value = '';
+    document.getElementById('flt-nome').value = '';
+    document.getElementById('flt-status').value = '';
+    state.filtered = MDAS.slice();
+    render();
+  }
+
+  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  /* ===== Modal Incluir/Alterar ===== */
+  var modalForm = document.getElementById('modal-form');
+  var formAtivo = document.getElementById('form-ativo');
+  var formAtivoLabel = document.getElementById('form-ativo-label');
+
+  formAtivo.addEventListener('change', function () {
+    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
+  });
+
+  function openIncluir() {
+    editingId = null;
+    document.getElementById('modal-form-title').textContent = 'Incluir MDA';
+    document.getElementById('form-mac').value = '';
+    document.getElementById('form-nome').value = '';
+    formAtivo.checked = true;
+    formAtivoLabel.textContent = 'Ativo';
+    modalForm.showModal();
+  }
+
+  function openAlterar(id) {
+    var m = findById(id);
+    if (!m) return;
+    editingId = id;
+    document.getElementById('modal-form-title').textContent = 'Alterar MDA';
+    document.getElementById('form-mac').value = m.mac;
+    document.getElementById('form-nome').value = m.nome;
+    formAtivo.checked = m.ativo;
+    formAtivoLabel.textContent = m.ativo ? 'Ativo' : 'Inativo';
+    modalForm.showModal();
+  }
+
+  document.getElementById('btn-incluir').addEventListener('click', openIncluir);
+
+  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+    var mac = document.getElementById('form-mac').value.trim();
+    var nome = document.getElementById('form-nome').value.trim();
+    if (!mac || !nome) {
+      alert('Preencha MAC Address e Nome antes de salvar.');
+      return;
+    }
+    var ativo = formAtivo.checked;
+
+    if (editingId) {
+      var m = findById(editingId);
+      m.mac = mac;
+      m.nome = nome;
+      m.ativo = ativo;
+    } else {
+      MDAS.push({ id: nextId++, mac: mac, nome: nome, comunicacao: '—', qtd: 0, ativo: ativo, equipamentos: [] });
+    }
+    modalForm.close();
+    state.filtered = MDAS.slice();
+    render();
+  });
+
+  /* ===== Modal Detalhar ===== */
+  var modalDetail = document.getElementById('modal-detail');
+
+  function openDetalhar(id) {
+    var m = findById(id);
+    if (!m) return;
+    document.getElementById('det-id').textContent = m.id;
+    document.getElementById('det-ativo').textContent = m.ativo ? 'Sim' : 'Não';
+    document.getElementById('det-mac').textContent = m.mac;
+    document.getElementById('det-nome').textContent = m.nome;
+    document.getElementById('det-comunicacao').textContent = m.comunicacao;
+    document.getElementById('det-qtd').textContent = m.qtd;
+
+    var list = document.getElementById('det-equipamentos');
+    if (m.equipamentos.length === 0) {
+      list.innerHTML = '<li style="opacity:.6">Nenhum equipamento vinculado</li>';
+    } else {
+      list.innerHTML = m.equipamentos.map(function (e) { return '<li>' + e + '</li>'; }).join('');
+    }
+    modalDetail.showModal();
+  }
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  var modalConfirm = document.getElementById('modal-confirm');
+
+  function openExcluir(id) {
+    var m = findById(id);
+    if (!m) return;
+    deletingId = id;
+    document.getElementById('confirm-subtext').textContent = 'O MDA "' + m.nome + '" será removido permanentemente.';
+    modalConfirm.showModal();
+  }
+
+  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+    if (deletingId == null) return;
+    var idx = MDAS.findIndex(function (m) { return m.id === deletingId; });
+    if (idx !== -1) MDAS.splice(idx, 1);
+    deletingId = null;
+    modalConfirm.close();
+    state.filtered = MDAS.slice();
+    render();
+  });
+
+  /* ===== Delegação de cliques nas ações da tabela ===== */
+  tbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-action]');
+    if (!btn) return;
+    var id = parseInt(btn.getAttribute('data-id'), 10);
+    var action = btn.getAttribute('data-action');
+    if (action === 'detalhar') openDetalhar(id);
+    else if (action === 'alterar') openAlterar(id);
+    else if (action === 'excluir') openExcluir(id);
+  });
+
+  /* ===== Fechamento de modais (botão ✕ / Cancelar) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = document.getElementById(btn.getAttribute('data-close'));
+      if (dialog) dialog.close();
+    });
+  });
+
+  render();
+})();
+</script>

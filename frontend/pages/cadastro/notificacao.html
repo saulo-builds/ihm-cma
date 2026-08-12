@@ -1,0 +1,843 @@
+<!-- ==================================================================
+     Notificação — Cadastro (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cad);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Card de filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Card de resultados ===== */
+  .results-count {
+    font-size: 12px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== Toggle Ativo/Inativo ===== */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-md);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: color-mix(in srgb, var(--ok) 30%, transparent);
+    border-color: var(--ok);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(18px);
+    background: var(--ok-hi);
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text-hi);
+  }
+
+  /* ===== Modais (<dialog> nativo) ===== */
+  dialog.modal {
+    border: none;
+    padding: 0;
+    width: 440px;
+    max-width: 92vw;
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    color: var(--text-hi);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  dialog.modal.modal-lg {
+    width: 500px;
+  }
+
+  dialog.modal::backdrop {
+    background: rgba(4, 4, 12, 0.7);
+  }
+
+  dialog.modal[open] {
+    animation: modal-in 0.15s ease;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-md);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-hi);
+  }
+
+  .modal-body {
+    padding: 18px;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* ===== Modal Detalhar — visualização somente leitura ===== */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .detail-field__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-md);
+    margin-bottom: 4px;
+  }
+
+  .detail-field__value {
+    font-size: 14px;
+    color: var(--text-hi);
+    font-weight: 600;
+  }
+
+  /* ===== Modal Membros ===== */
+  .member-add {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .member-add .input {
+    flex: 1;
+  }
+
+  .member-search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: -6px 0 14px;
+  }
+
+  .member-search-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+  }
+
+  .member-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .member-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .member-item__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cad);
+    color: var(--text-hi);
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .member-item__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .member-item__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-hi);
+  }
+
+  .member-item__email {
+    font-size: 11.5px;
+    color: var(--text-md);
+  }
+
+  .member-empty {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  dialog.modal-confirm {
+    width: 380px;
+  }
+
+  .confirm-body {
+    padding: 22px 18px;
+    text-align: center;
+  }
+
+  .confirm-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--crit-lo);
+    border: 1px solid var(--crit);
+    color: var(--crit-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .confirm-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+    margin-bottom: 4px;
+  }
+
+  .confirm-subtext {
+    font-size: 12.5px;
+    color: var(--text-md);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 900px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid,
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Cadastro</div>
+  <h1 class="page-header__title">Notificação</h1>
+  <p class="page-header__desc">Grupos de notificação e seus membros</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-id">ID</label>
+        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-membro">Membro</label>
+        <input type="text" class="input" id="flt-membro" placeholder="Buscar por membro..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-ativo">Ativo</label>
+        <select class="select" id="flt-ativo">
+          <option value="">Todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Resultados ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Resultados</div>
+      <div class="card-subtitle" id="results-count">2 registros encontrados</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table" id="notif-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Qtd. Usuários</th>
+          <th>Ativo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="notif-tbody">
+        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="table-empty" hidden>Nenhum grupo de notificação encontrado para os filtros aplicados.</div>
+  </div>
+</div>
+
+<!-- ===== Modal Incluir / Alterar ===== -->
+<dialog class="modal" id="modal-form">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-form-title">Incluir Grupo de Notificação</div>
+    <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="form-nome">Nome</label>
+        <input type="text" class="input" id="form-nome" placeholder="Ex.: GOT-CMA Operação" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">Ativo</label>
+        <label class="toggle">
+          <input type="checkbox" id="form-ativo" checked />
+          <span class="toggle-track"></span>
+          <span class="toggle-label" id="form-ativo-label">Ativo</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Detalhar ===== -->
+<dialog class="modal" id="modal-detail">
+  <div class="modal-header">
+    <div class="modal-title">Detalhes do Grupo</div>
+    <button type="button" class="modal-close" data-close="modal-detail" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid">
+      <div>
+        <div class="detail-field__label">ID</div>
+        <div class="detail-field__value" id="det-id">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Ativo</div>
+        <div class="detail-field__value" id="det-ativo">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Nome</div>
+        <div class="detail-field__value" id="det-nome">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Qtd. Usuários</div>
+        <div class="detail-field__value" id="det-qtd">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-detail">Fechar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Membros ===== -->
+<dialog class="modal modal-lg" id="modal-membros">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-membros-title">Membros do Grupo</div>
+    <button type="button" class="modal-close" data-close="modal-membros" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="member-add">
+      <input type="text" class="input" id="membro-busca" placeholder="Buscar usuário por nome ou e-mail..." />
+      <button type="button" class="btn btn-primary btn-sm" id="btn-add-membro">Adicionar membro</button>
+    </div>
+    <div class="member-search-results" id="membro-busca-results" hidden></div>
+    <ul class="member-list" id="membro-list"></ul>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-membros">Fechar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal de confirmação de exclusão ===== -->
+<dialog class="modal modal-confirm" id="modal-confirm">
+  <div class="confirm-body">
+    <div class="confirm-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      </svg>
+    </div>
+    <div class="confirm-text">Confirmar exclusão?</div>
+    <div class="confirm-subtext" id="confirm-subtext">Esta ação não poderá ser desfeita.</div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-confirm">Cancelar</button>
+    <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao">Confirmar</button>
+  </div>
+</dialog>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado dos grupos de notificação ===== */
+  var GRUPOS = [
+    {
+      id: 1, nome: 'GOT-CMA Operação', ativo: true,
+      membros: [
+        { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
+        { nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br' },
+        { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
+      ]
+    },
+    {
+      id: 2, nome: 'GOT-CMA Manutenção', ativo: true,
+      membros: [
+        { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
+        { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
+      ]
+    }
+  ];
+
+  /* Diretório simulado de usuários disponíveis para adicionar como membro */
+  var DIRETORIO = [
+    { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
+    { nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br' },
+    { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
+  ];
+
+  var nextId = GRUPOS.length + 1;
+  var state = { filtered: GRUPOS.slice() };
+  var editingId = null;
+  var deletingId = null;
+  var membrosTargetId = null;
+
+  var tbody = document.getElementById('notif-tbody');
+  var emptyEl = document.getElementById('table-empty');
+  var countEl = document.getElementById('results-count');
+
+  function findById(id) {
+    for (var i = 0; i < GRUPOS.length; i++) {
+      if (GRUPOS[i].id === id) return GRUPOS[i];
+    }
+    return null;
+  }
+
+  function initials(nome) {
+    var parts = nome.trim().split(/\s+/);
+    return ((parts[0] || '')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  function render() {
+    tbody.innerHTML = state.filtered.map(function (g) {
+      return '<tr>' +
+        '<td class="td-mono">' + g.id + '</td>' +
+        '<td class="hi">' + g.nome + '</td>' +
+        '<td class="td-mono">' + g.membros.length + '</td>' +
+        '<td>' + (g.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + g.id + '">Detalhar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + g.id + '">Alterar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="membros" data-id="' + g.id + '">Membros</button>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-action="excluir" data-id="' + g.id + '">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    tbody.parentElement.hidden = state.filtered.length === 0;
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var id = document.getElementById('flt-id').value.trim();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var membro = document.getElementById('flt-membro').value.trim().toLowerCase();
+    var ativo = document.getElementById('flt-ativo').value;
+
+    state.filtered = GRUPOS.filter(function (g) {
+      if (id && String(g.id) !== id) return false;
+      if (nome && g.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (membro && !g.membros.some(function (m) { return m.nome.toLowerCase().indexOf(membro) !== -1; })) return false;
+      if (ativo === 'Ativo' && !g.ativo) return false;
+      if (ativo === 'Inativo' && g.ativo) return false;
+      return true;
+    });
+    render();
+  }
+
+  function clearFilters() {
+    document.getElementById('flt-id').value = '';
+    document.getElementById('flt-nome').value = '';
+    document.getElementById('flt-membro').value = '';
+    document.getElementById('flt-ativo').value = '';
+    state.filtered = GRUPOS.slice();
+    render();
+  }
+
+  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  /* ===== Modal Incluir/Alterar ===== */
+  var modalForm = document.getElementById('modal-form');
+  var formAtivo = document.getElementById('form-ativo');
+  var formAtivoLabel = document.getElementById('form-ativo-label');
+
+  formAtivo.addEventListener('change', function () {
+    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
+  });
+
+  function openIncluir() {
+    editingId = null;
+    document.getElementById('modal-form-title').textContent = 'Incluir Grupo de Notificação';
+    document.getElementById('form-nome').value = '';
+    formAtivo.checked = true;
+    formAtivoLabel.textContent = 'Ativo';
+    modalForm.showModal();
+  }
+
+  function openAlterar(id) {
+    var g = findById(id);
+    if (!g) return;
+    editingId = id;
+    document.getElementById('modal-form-title').textContent = 'Alterar Grupo de Notificação';
+    document.getElementById('form-nome').value = g.nome;
+    formAtivo.checked = g.ativo;
+    formAtivoLabel.textContent = g.ativo ? 'Ativo' : 'Inativo';
+    modalForm.showModal();
+  }
+
+  document.getElementById('btn-incluir').addEventListener('click', openIncluir);
+
+  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+    var nome = document.getElementById('form-nome').value.trim();
+    if (!nome) {
+      alert('Preencha o Nome antes de salvar.');
+      return;
+    }
+    var ativo = formAtivo.checked;
+
+    if (editingId) {
+      var g = findById(editingId);
+      g.nome = nome;
+      g.ativo = ativo;
+    } else {
+      GRUPOS.push({ id: nextId++, nome: nome, ativo: ativo, membros: [] });
+    }
+    modalForm.close();
+    state.filtered = GRUPOS.slice();
+    render();
+  });
+
+  /* ===== Modal Detalhar ===== */
+  var modalDetail = document.getElementById('modal-detail');
+
+  function openDetalhar(id) {
+    var g = findById(id);
+    if (!g) return;
+    document.getElementById('det-id').textContent = g.id;
+    document.getElementById('det-ativo').textContent = g.ativo ? 'Sim' : 'Não';
+    document.getElementById('det-nome').textContent = g.nome;
+    document.getElementById('det-qtd').textContent = g.membros.length;
+    modalDetail.showModal();
+  }
+
+  /* ===== Modal Membros ===== */
+  var modalMembros = document.getElementById('modal-membros');
+  var membroBusca = document.getElementById('membro-busca');
+  var membroBuscaResults = document.getElementById('membro-busca-results');
+  var membroList = document.getElementById('membro-list');
+
+  function renderMembros() {
+    var g = findById(membrosTargetId);
+    if (!g) return;
+    if (g.membros.length === 0) {
+      membroList.innerHTML = '<li class="member-empty">Nenhum membro cadastrado neste grupo</li>';
+      return;
+    }
+    membroList.innerHTML = g.membros.map(function (m, idx) {
+      return '<li class="member-item">' +
+        '<span class="member-item__avatar">' + initials(m.nome) + '</span>' +
+        '<span class="member-item__body">' +
+          '<span class="member-item__name">' + m.nome + '</span><br/>' +
+          '<span class="member-item__email">' + m.email + '</span>' +
+        '</span>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-remove-idx="' + idx + '">Remover</button>' +
+        '</li>';
+    }).join('');
+  }
+
+  function openMembros(id) {
+    var g = findById(id);
+    if (!g) return;
+    membrosTargetId = id;
+    document.getElementById('modal-membros-title').textContent = 'Membros — ' + g.nome;
+    membroBusca.value = '';
+    membroBuscaResults.hidden = true;
+    membroBuscaResults.innerHTML = '';
+    renderMembros();
+    modalMembros.showModal();
+  }
+
+  membroBusca.addEventListener('input', function () {
+    var termo = membroBusca.value.trim().toLowerCase();
+    var g = findById(membrosTargetId);
+    if (!termo || !g) {
+      membroBuscaResults.hidden = true;
+      membroBuscaResults.innerHTML = '';
+      return;
+    }
+    var jaMembro = g.membros.map(function (m) { return m.email; });
+    var resultados = DIRETORIO.filter(function (u) {
+      return jaMembro.indexOf(u.email) === -1 &&
+        (u.nome.toLowerCase().indexOf(termo) !== -1 || u.email.toLowerCase().indexOf(termo) !== -1);
+    });
+    if (resultados.length === 0) {
+      membroBuscaResults.hidden = false;
+      membroBuscaResults.innerHTML = '<div class="member-search-item">Nenhum usuário encontrado</div>';
+      return;
+    }
+    membroBuscaResults.hidden = false;
+    membroBuscaResults.innerHTML = resultados.map(function (u) {
+      return '<div class="member-search-item"><span>' + u.nome + ' — ' + u.email + '</span>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-pick-email="' + u.email + '">Adicionar</button></div>';
+    }).join('');
+  });
+
+  membroBuscaResults.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-pick-email]');
+    if (!btn) return;
+    var g = findById(membrosTargetId);
+    if (!g) return;
+    var email = btn.getAttribute('data-pick-email');
+    var usuario = DIRETORIO.filter(function (u) { return u.email === email; })[0];
+    if (usuario) g.membros.push(usuario);
+    membroBusca.value = '';
+    membroBuscaResults.hidden = true;
+    membroBuscaResults.innerHTML = '';
+    renderMembros();
+    render();
+  });
+
+  document.getElementById('btn-add-membro').addEventListener('click', function () {
+    membroBusca.focus();
+  });
+
+  membroList.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-remove-idx]');
+    if (!btn) return;
+    var g = findById(membrosTargetId);
+    if (!g) return;
+    var idx = parseInt(btn.getAttribute('data-remove-idx'), 10);
+    g.membros.splice(idx, 1);
+    renderMembros();
+    render();
+  });
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  var modalConfirm = document.getElementById('modal-confirm');
+
+  function openExcluir(id) {
+    var g = findById(id);
+    if (!g) return;
+    deletingId = id;
+    document.getElementById('confirm-subtext').textContent = 'O grupo "' + g.nome + '" será removido permanentemente.';
+    modalConfirm.showModal();
+  }
+
+  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+    if (deletingId == null) return;
+    var idx = GRUPOS.findIndex(function (g) { return g.id === deletingId; });
+    if (idx !== -1) GRUPOS.splice(idx, 1);
+    deletingId = null;
+    modalConfirm.close();
+    state.filtered = GRUPOS.slice();
+    render();
+  });
+
+  /* ===== Delegação de cliques nas ações da tabela ===== */
+  tbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-action]');
+    if (!btn) return;
+    var id = parseInt(btn.getAttribute('data-id'), 10);
+    var action = btn.getAttribute('data-action');
+    if (action === 'detalhar') openDetalhar(id);
+    else if (action === 'alterar') openAlterar(id);
+    else if (action === 'membros') openMembros(id);
+    else if (action === 'excluir') openExcluir(id);
+  });
+
+  /* ===== Fechamento de modais (botão ✕ / Cancelar) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = document.getElementById(btn.getAttribute('data-close'));
+      if (dialog) dialog.close();
+    });
+  });
+
+  render();
+})();
+</script>

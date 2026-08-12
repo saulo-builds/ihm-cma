@@ -1,0 +1,388 @@
+<!-- ==================================================================
+     Tabela — Monitoramento (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mon);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Card de filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filters-grid + .filters-grid {
+    margin-top: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Card de resultados ===== */
+  .results-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .results-count {
+    font-size: 12px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  .results-perpage {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .results-perpage .select {
+    width: 72px;
+    height: 30px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  /* ===== Bloco 3 — Rodapé de paginação ===== */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination__info {
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .pagination__nav {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 1100px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid {
+      grid-template-columns: 1fr;
+    }
+    .results-toolbar {
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Monitoramento</div>
+  <h1 class="page-header__title">Tabela</h1>
+  <p class="page-header__desc">Lista completa dos ativos com filtros avançados</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-id">ID</label>
+        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipo">Tipo / Categoria</label>
+        <select class="select" id="flt-tipo">
+          <option value="">Todos</option>
+          <option value="Fibra">Fibra</option>
+          <option value="Hidráulico">Hidráulico</option>
+          <option value="Energia">Energia</option>
+          <option value="Sinalização">Sinalização</option>
+          <option value="Fibra/Comun.">Fibra/Comun.</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-codigo">Código / Tag</label>
+        <input type="text" class="input" id="flt-codigo" placeholder="Ex.: FB-EBL-01" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+    </div>
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-linha">Linha</label>
+        <select class="select" id="flt-linha">
+          <option value="">Todas</option>
+          <option value="L10">Linha 10</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipolocal">Tipo de Local</label>
+        <select class="select" id="flt-tipolocal">
+          <option value="">Todos</option>
+          <option value="Sala Técnica">Sala Técnica</option>
+          <option value="Estação">Estação</option>
+          <option value="CCO">CCO</option>
+          <option value="Trecho">Trecho</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-local">Local</label>
+        <input type="text" class="input" id="flt-local" placeholder="Buscar por local..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-status">Status</label>
+        <select class="select" id="flt-status">
+          <option value="">Todos</option>
+          <option value="Online">Online</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Alerta">Alerta</option>
+          <option value="Offline">Offline</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-aplicar">Aplicar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Resultados ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Resultados</div>
+      <div class="card-subtitle" id="results-count">8 registros encontrados</div>
+    </div>
+    <div class="results-toolbar">
+      <div class="results-perpage">
+        <label for="flt-perpage">Linhas</label>
+        <select class="select" id="flt-perpage">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table" id="ativos-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo de Equipamento</th>
+          <th>Local</th>
+          <th>Responsável</th>
+          <th>Horário Operacional</th>
+          <th>Status</th>
+          <th>Valor</th>
+          <th>Falhas</th>
+        </tr>
+      </thead>
+      <tbody id="ativos-tbody">
+        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="table-empty" hidden>Nenhum ativo encontrado para os filtros aplicados.</div>
+  </div>
+
+  <!-- ===== Bloco 3 — Paginação ===== -->
+  <div class="pagination">
+    <span class="pagination__info" id="pagination-info">Página 1 de 1</span>
+    <div class="pagination__nav">
+      <button type="button" class="btn btn-ghost btn-sm" id="pg-prev">Anterior</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="pg-next">Próxima</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado dos 8 ativos ===== */
+  var ATIVOS = [
+    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', codigo: 'FB-EBL-01', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 2, nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', codigo: 'HID-BMB-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 3, nome: 'Sistemas Elétricos', tipo: 'Energia', codigo: 'ENE-SE-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 4, nome: 'Grupo Gerador', tipo: 'Energia', codigo: 'ENE-GG-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 5, nome: 'Sistemas Elétricos', tipo: 'Energia', codigo: 'ENE-SE-BRA', local: 'CCO Brás', tipoLocal: 'CCO', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 6, nome: 'Monitoramento CTC', tipo: 'Sinalização', codigo: 'SIN-CTC-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 7, nome: 'Monitoramento AMV', tipo: 'Sinalização', codigo: 'SIN-AMV-01', local: 'Brás — Linha 10', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '06-22h', status: 'Online', valor: 'OK', falhas: 0 },
+    { id: 8, nome: 'STO L10', tipo: 'Fibra/Comun.', codigo: 'FB-STO-L10', local: 'Linha 10', tipoLocal: 'Trecho', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 }
+  ];
+
+  var CAT_CLASS = {
+    'Fibra': 'cat-fibra',
+    'Hidráulico': 'cat-hidraulico',
+    'Energia': 'cat-energia',
+    'Sinalização': 'cat-sinalizacao',
+    'Fibra/Comun.': 'cat-fibra-com'
+  };
+
+  var state = { filtered: ATIVOS.slice(), page: 1, perPage: 10 };
+
+  var tbody = document.getElementById('ativos-tbody');
+  var emptyEl = document.getElementById('table-empty');
+  var countEl = document.getElementById('results-count');
+  var pageInfoEl = document.getElementById('pagination-info');
+
+  function statusBadge(status) {
+    var map = { 'Online': 'status-ok', 'Parcial': 'status-ok', 'Alerta': 'status-alert', 'Offline': 'status-offline' };
+    var cls = map[status] || 'status-offline';
+    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + status + '</span>';
+  }
+
+  function render() {
+    var start = (state.page - 1) * state.perPage;
+    var pageItems = state.filtered.slice(start, start + state.perPage);
+
+    tbody.innerHTML = pageItems.map(function (a) {
+      return '<tr>' +
+        '<td class="hi">' + a.nome + '</td>' +
+        '<td><span class="cat ' + (CAT_CLASS[a.tipo] || '') + '">' + a.tipo + '</span></td>' +
+        '<td>' + a.local + '</td>' +
+        '<td>' + a.responsavel + '</td>' +
+        '<td>' + a.horario + '</td>' +
+        '<td>' + statusBadge(a.status) + '</td>' +
+        '<td class="td-mono">' + a.valor + '</td>' +
+        '<td class="td-mono">' + a.falhas + '</td>' +
+        '</tr>';
+    }).join('');
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    tbody.parentElement.hidden = state.filtered.length === 0;
+
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
+
+    var totalPages = Math.max(1, Math.ceil(state.filtered.length / state.perPage));
+    if (state.page > totalPages) state.page = totalPages;
+    pageInfoEl.textContent = 'Página ' + state.page + ' de ' + totalPages;
+    document.getElementById('pg-prev').disabled = state.page <= 1;
+    document.getElementById('pg-next').disabled = state.page >= totalPages;
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var id = document.getElementById('flt-id').value.trim();
+    var tipo = document.getElementById('flt-tipo').value;
+    var codigo = document.getElementById('flt-codigo').value.trim().toLowerCase();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var linha = document.getElementById('flt-linha').value;
+    var tipoLocal = document.getElementById('flt-tipolocal').value;
+    var local = document.getElementById('flt-local').value.trim().toLowerCase();
+    var status = document.getElementById('flt-status').value;
+
+    state.filtered = ATIVOS.filter(function (a) {
+      if (id && String(a.id) !== id) return false;
+      if (tipo && a.tipo !== tipo) return false;
+      if (codigo && a.codigo.toLowerCase().indexOf(codigo) === -1) return false;
+      if (nome && a.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (linha && a.linha !== linha) return false;
+      if (tipoLocal && a.tipoLocal !== tipoLocal) return false;
+      if (local && a.local.toLowerCase().indexOf(local) === -1) return false;
+      if (status && a.status !== status) return false;
+      return true;
+    });
+
+    state.page = 1;
+    render();
+  }
+
+  function clearFilters() {
+    ['flt-id', 'flt-codigo', 'flt-nome', 'flt-local'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    ['flt-tipo', 'flt-linha', 'flt-tipolocal', 'flt-status'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    state.filtered = ATIVOS.slice();
+    state.page = 1;
+    render();
+  }
+
+  document.getElementById('btn-aplicar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  /* ===== Linhas por página ===== */
+  document.getElementById('flt-perpage').addEventListener('change', function (evt) {
+    state.perPage = parseInt(evt.target.value, 10) || 10;
+    state.page = 1;
+    render();
+  });
+
+  /* ===== Paginação ===== */
+  document.getElementById('pg-prev').addEventListener('click', function () {
+    if (state.page > 1) { state.page--; render(); }
+  });
+  document.getElementById('pg-next').addEventListener('click', function () {
+    var totalPages = Math.max(1, Math.ceil(state.filtered.length / state.perPage));
+    if (state.page < totalPages) { state.page++; render(); }
+  });
+
+  render();
+})();
+</script>

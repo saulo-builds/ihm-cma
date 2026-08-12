@@ -1,0 +1,383 @@
+<!-- ==================================================================
+     Alarmes — Monitoramento (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mon);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Abas de navegação ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-md);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .tab-btn:hover {
+    color: var(--text-hi);
+  }
+
+  .tab-btn.active {
+    color: var(--text-hi);
+    border-bottom-color: var(--mon);
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  /* ===== Bloco 2 — Aviso de nenhuma falha ativa ===== */
+  .alarm-banner-ok {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    background: var(--ok-lo);
+    color: var(--ok-hi);
+    border: 1px solid var(--ok);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .alarm-banner-ok svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+  }
+
+  /* ===== Bloco 3 — Cards de alarme ativo ===== */
+  .alarm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .alarm-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .alarm-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .alarm-card__asset {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .alarm-card__local {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .alarm-card__body {
+    padding: 14px 16px;
+  }
+
+  .alarm-card__desc {
+    font-size: 13px;
+    color: var(--text-md);
+    line-height: 1.5;
+  }
+
+  .alarm-card__since {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-lo);
+  }
+
+  .alarm-card__since strong {
+    color: var(--text-md);
+    font-weight: 600;
+  }
+
+  .alarm-card__actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .alarm-card.is-ack .alarm-card__top {
+    opacity: 0.6;
+  }
+
+  .alarm-card__ack-tag {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ok-hi);
+  }
+
+  .alarm-card.is-ack .alarm-card__ack-tag {
+    display: inline-flex;
+  }
+
+  .alarm-card.is-ack .btn-reconhecer {
+    display: none;
+  }
+
+  /* ===== Bloco 4 — Aba Histórico ===== */
+  .hist-filters {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .hist-filters .filter-field {
+    min-width: 180px;
+  }
+
+  .table-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .table-empty svg {
+    display: block;
+    margin: 0 auto 10px;
+    width: 32px;
+    height: 32px;
+    color: var(--text-lo);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 800px) {
+    .alarm-grid {
+      grid-template-columns: 1fr;
+    }
+    .hist-filters {
+      flex-wrap: wrap;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Monitoramento</div>
+  <h1 class="page-header__title">Alarmes</h1>
+  <p class="page-header__desc">Alarmes ativos e histórico de eventos</p>
+</div>
+
+<!-- ===== Bloco 1 — Abas ===== -->
+<div class="tabs">
+  <button type="button" class="tab-btn active" data-tab="ativos">Ativos (2)</button>
+  <button type="button" class="tab-btn" data-tab="historico">Histórico</button>
+</div>
+
+<!-- ===== Aba Ativos ===== -->
+<div class="tab-panel active" id="tab-ativos">
+
+  <!-- Aviso de nenhuma falha operacional -->
+  <div class="alarm-banner-ok">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
+    </svg>
+    <span>Nenhuma falha operacional ativa — todos os ativos estão online</span>
+  </div>
+
+  <!-- Cards de alarme — maturidade parcial (avisos, não falhas) -->
+  <div class="alarm-grid">
+    <div class="alarm-card" id="alarm-card-1">
+      <div class="alarm-card__top">
+        <div>
+          <div class="alarm-card__asset">STO L10</div>
+          <div class="alarm-card__local">Linha 10</div>
+        </div>
+        <span class="badge-maturidade maturidade-parcial">Maturidade Parcial</span>
+      </div>
+      <div class="alarm-card__body">
+        <p class="alarm-card__desc">Sistema parcialmente implantado — monitoramento ativo apenas nas estações concluídas.</p>
+        <p class="alarm-card__since">Desde: <strong>em implantação</strong></p>
+      </div>
+      <div class="alarm-card__actions">
+        <button type="button" class="btn btn-ghost btn-sm btn-reconhecer" data-ack="alarm-card-1">Reconhecer</button>
+        <span class="alarm-card__ack-tag">✓ Reconhecido</span>
+        <button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>
+      </div>
+    </div>
+
+    <div class="alarm-card" id="alarm-card-2">
+      <div class="alarm-card__top">
+        <div>
+          <div class="alarm-card__asset">Mon. Fibra Ebilock Luz L10</div>
+          <div class="alarm-card__local">Sala Técnica LUZ</div>
+        </div>
+        <span class="badge-maturidade maturidade-parcial">Maturidade Parcial</span>
+      </div>
+      <div class="alarm-card__body">
+        <p class="alarm-card__desc">Sistema em fase de testes — dados podem ser inconsistentes.</p>
+        <p class="alarm-card__since">Desde: <strong>em teste</strong></p>
+      </div>
+      <div class="alarm-card__actions">
+        <button type="button" class="btn btn-ghost btn-sm btn-reconhecer" data-ack="alarm-card-2">Reconhecer</button>
+        <span class="alarm-card__ack-tag">✓ Reconhecido</span>
+        <button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Aba Histórico ===== -->
+<div class="tab-panel" id="tab-historico">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Histórico de eventos</div>
+        <div class="card-subtitle">Alarmes e ocorrências resolvidos</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="hist-filters">
+        <div class="filter-field">
+          <label class="form-label" for="hist-data-ini">Data Inicial</label>
+          <input type="date" class="input" id="hist-data-ini" />
+        </div>
+        <div class="filter-field">
+          <label class="form-label" for="hist-data-fim">Data Final</label>
+          <input type="date" class="input" id="hist-data-fim" />
+        </div>
+        <button type="button" class="btn btn-primary" id="hist-filtrar">Filtrar</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="hist-table">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Ativo</th>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Duração</th>
+              <th>Resolvido por</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="table-empty" id="hist-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <line x1="8" y1="14" x2="16" y2="14"></line>
+          </svg>
+          Nenhum evento registrado no período
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Bloco 1 — alternância de abas ===== */
+  var tabBtns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+  var panels = {
+    ativos: document.getElementById('tab-ativos'),
+    historico: document.getElementById('tab-historico')
+  };
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      Object.keys(panels).forEach(function (key) {
+        panels[key].classList.toggle('active', key === btn.getAttribute('data-tab'));
+      });
+    });
+  });
+
+  /* ===== Bloco 3 — reconhecer alarme ===== */
+  document.querySelectorAll('.btn-reconhecer').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var card = document.getElementById(btn.getAttribute('data-ack'));
+      if (card) card.classList.add('is-ack');
+    });
+  });
+
+  /* ===== Bloco 4 — filtro de período do histórico (dataset vazio por ora) ===== */
+  var histDataFim = document.getElementById('hist-data-fim');
+  var histDataIni = document.getElementById('hist-data-ini');
+  function toISODate(d) { return d.toISOString().slice(0, 10); }
+  var hoje = new Date();
+  var trintaDiasAtras = new Date();
+  trintaDiasAtras.setDate(hoje.getDate() - 30);
+  histDataFim.value = toISODate(hoje);
+  histDataIni.value = toISODate(trintaDiasAtras);
+
+  document.getElementById('hist-filtrar').addEventListener('click', function () {
+    /* Sem eventos históricos cadastrados neste momento — estado vazio permanece. */
+    document.getElementById('hist-empty').hidden = false;
+  });
+})();
+</script>

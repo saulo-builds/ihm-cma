@@ -1,0 +1,60 @@
+/* Tokens visuais globais do CMA — única fonte de verdade para cor, tipografia e dimensão */
+
+:root {
+  /* Superfícies */
+  --bg: #0D0D1A;
+  --surface-1: #13132A;
+  --surface-2: #1A1A35;
+  --surface-3: #222240;
+  --border: #1E1E3A;
+  --border-hi: #2A2A50;
+
+  /* Texto */
+  --text-hi: #E8EEF8;
+  --text-md: #8A94B0;
+  --text-lo: #404468;
+
+  /* Marca CPTM */
+  --cptm-red: #E63229;
+
+  /* Status operacional: ok */
+  --ok: #1D9E75;
+  --ok-lo: #0A2018;
+  --ok-hi: #2FD4A0;
+
+  /* Status operacional: alerta */
+  --alert: #D4891A;
+  --alert-lo: #2A1A04;
+  --alert-hi: #F0A830;
+
+  /* Status operacional: crítico */
+  --crit: #C0392B;
+  --crit-lo: #280808;
+  --crit-hi: #F05050;
+
+  /* Status operacional: offline */
+  --offline: #404468;
+  --offline-lo: #141428;
+
+  /* Maturidade do sistema: parcial */
+  --parcial: #7B5EA7;
+  --parcial-lo: #160F28;
+  --parcial-hi: #BFA0E8;
+
+  /* Módulos — cor de acento da sidebar */
+  --mon: #1A6EC2; /* Monitoramento */
+  --cad: #2E7D32; /* Cadastro */
+  --rel: #7B5EA7; /* Relatórios */
+  --vw: #C0392B;  /* VideoWall */
+
+  /* Dimensões */
+  --header-h: 52px;
+  --sidebar-w: 220px;
+  --sidebar-coll: 56px;
+  --radius: 8px;
+  --radius-sm: 5px;
+
+  /* Tipografia — fontes serão embarcadas localmente; system-ui como fallback até lá */
+  --font: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}

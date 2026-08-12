@@ -1,0 +1,62 @@
+/* Reset base — normaliza box model, preenche viewport e define scrollbar/seleção customizadas */
+
+/* Reset universal de box-sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Viewport fixo — a IHM não rola a página, cada área rola seu próprio conteúdo */
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-hi);
+  font-family: var(--font);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+img,
+picture,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Scrollbar customizada — fina, discreta, para as áreas com overflow interno */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hi);
+  border-radius: var(--radius-sm);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hi) transparent;
+}
+
+/* Seleção de texto */
+::selection {
+  background: var(--mon);
+  color: var(--text-hi);
+}

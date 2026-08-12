@@ -1,0 +1,88 @@
+/* Table — grade de dados (ativos, alarmes, relatórios) */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead {
+  border-bottom: 1px solid var(--border-hi);
+}
+
+.table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-lo);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.1s ease;
+}
+
+.table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.table td {
+  padding: 10px 12px;
+  color: var(--text-md);
+  vertical-align: middle;
+}
+
+/* Destaque de valor relevante na célula */
+.table td.hi {
+  color: var(--text-hi);
+  font-weight: 600;
+}
+
+/* Valor numérico / técnico alinhado em fonte monoespaçada */
+.table .td-mono {
+  font-family: var(--font-mono);
+  color: var(--text-hi);
+}
+
+/* Categorias de ativo — cada uma com tinta própria derivada do token de acento correspondente */
+.cat {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cat-fibra {
+  background: color-mix(in srgb, var(--mon) 16%, transparent);
+  color: var(--mon);
+}
+
+.cat-fibra-com {
+  background: color-mix(in srgb, var(--rel) 16%, transparent);
+  color: var(--rel);
+}
+
+.cat-hidraulico {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok-hi);
+}
+
+.cat-energia {
+  background: color-mix(in srgb, var(--alert) 16%, transparent);
+  color: var(--alert-hi);
+}
+
+.cat-mecanico {
+  background: color-mix(in srgb, var(--offline) 40%, transparent);
+  color: var(--text-md);
+}
+
+.cat-sinalizacao {
+  background: color-mix(in srgb, var(--crit) 16%, transparent);
+  color: var(--crit-hi);
+}

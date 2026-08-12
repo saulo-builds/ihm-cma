@@ -1,0 +1,314 @@
+<!-- ==================================================================
+     Localidade — Monitoramento (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mon);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    align-items: end;
+  }
+
+  .filter-actions-inline {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* ===== Bloco 2 — Tabela de localidades ===== */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .loc-row {
+    cursor: default;
+  }
+
+  .loc-detail-row td {
+    padding: 0;
+    background: var(--surface-2);
+  }
+
+  .loc-detail-row.is-collapsed {
+    display: none;
+  }
+
+  .loc-detail {
+    padding: 12px 16px;
+  }
+
+  .loc-detail__empty {
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .loc-detail__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .loc-detail__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .loc-detail__name {
+    color: var(--text-hi);
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .loc-toggle-icon {
+    display: inline-block;
+    transition: transform 0.15s ease;
+  }
+
+  .loc-toggle-icon.is-open {
+    transform: rotate(90deg);
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  @media (max-width: 700px) {
+    .filters-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Monitoramento</div>
+  <h1 class="page-header__title">Localidade</h1>
+  <p class="page-header__desc">Localidades cadastradas e seus ativos</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-linha">Linha</label>
+        <input type="text" class="input" id="flt-linha" placeholder="Ex.: L10" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome da localidade..." />
+      </div>
+      <div class="filter-actions-inline">
+        <button type="button" class="btn btn-primary" id="btn-aplicar">Aplicar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Tabela de localidades ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Localidades</div>
+      <div class="card-subtitle" id="loc-count">5 localidades encontradas</div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="table" id="loc-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Linha</th>
+          <th>Qtd. Ativos</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="loc-tbody">
+        <!-- Linhas renderizadas via JS -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="loc-empty" hidden>Nenhuma localidade encontrada para os filtros aplicados.</div>
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado — localidades e seus ativos ===== */
+  var LOCALIDADES = [
+    {
+      nome: 'Sala Técnica LUZ', linha: 'L10',
+      ativos: [
+        { nome: 'Mon. Fibra Ebilock Luz L10', categoria: 'Fibra', status: 'Online' }
+      ]
+    },
+    {
+      nome: 'Est. Tamanduateí', linha: 'L10',
+      ativos: [
+        { nome: 'Sist. Acionamento de Bombas', categoria: 'Hidráulico', status: 'Online' },
+        { nome: 'Sistemas Elétricos', categoria: 'Energia', status: 'Online' },
+        { nome: 'Grupo Gerador', categoria: 'Energia', status: 'Online' },
+        { nome: 'Monitoramento CTC', categoria: 'Sinalização', status: 'Online' }
+      ]
+    },
+    {
+      nome: 'CCO Brás', linha: 'L10',
+      ativos: [
+        { nome: 'Sistemas Elétricos', categoria: 'Energia', status: 'Online' }
+      ]
+    },
+    {
+      nome: 'Brás — Linha 10', linha: 'L10',
+      ativos: [
+        { nome: 'Monitoramento AMV', categoria: 'Sinalização', status: 'Online' }
+      ]
+    },
+    {
+      nome: 'Linha 10 (trecho)', linha: 'L10',
+      ativos: [
+        { nome: 'STO L10', categoria: 'Fibra/Comun.', status: 'Online' }
+      ]
+    }
+  ];
+
+  var CAT_CLASS = {
+    'Fibra': 'cat-fibra',
+    'Hidráulico': 'cat-hidraulico',
+    'Energia': 'cat-energia',
+    'Sinalização': 'cat-sinalizacao',
+    'Fibra/Comun.': 'cat-fibra-com'
+  };
+
+  var tbody = document.getElementById('loc-tbody');
+  var emptyEl = document.getElementById('loc-empty');
+  var countEl = document.getElementById('loc-count');
+  var state = { filtered: LOCALIDADES.slice() };
+
+  function detailHTML(loc) {
+    if (!loc.ativos.length) {
+      return '<div class="loc-detail"><p class="loc-detail__empty">Nenhum ativo cadastrado nesta localidade.</p></div>';
+    }
+    var items = loc.ativos.map(function (a) {
+      return '<div class="loc-detail__item">' +
+        '<span class="loc-detail__name">' + a.nome + '</span>' +
+        '<span class="cat ' + (CAT_CLASS[a.categoria] || '') + '">' + a.categoria + '</span>' +
+        '<span class="badge-status status-ok"><span class="dot"></span>' + a.status + '</span>' +
+        '</div>';
+    }).join('');
+    return '<div class="loc-detail"><div class="loc-detail__list">' + items + '</div></div>';
+  }
+
+  function render() {
+    tbody.innerHTML = '';
+
+    state.filtered.forEach(function (loc, idx) {
+      var row = document.createElement('tr');
+      row.className = 'loc-row';
+      row.innerHTML =
+        '<td class="hi">' + loc.nome + '</td>' +
+        '<td>' + loc.linha + '</td>' +
+        '<td class="td-mono">' + loc.ativos.length + '</td>' +
+        '<td><button type="button" class="btn btn-ghost btn-sm" data-toggle="' + idx + '">' +
+          '<span class="loc-toggle-icon" id="loc-icon-' + idx + '">&rsaquo;</span> Detalhar' +
+        '</button></td>';
+      tbody.appendChild(row);
+
+      var detailRow = document.createElement('tr');
+      detailRow.className = 'loc-detail-row is-collapsed';
+      detailRow.id = 'loc-detail-' + idx;
+      var td = document.createElement('td');
+      td.colSpan = 4;
+      td.innerHTML = detailHTML(loc);
+      detailRow.appendChild(td);
+      tbody.appendChild(detailRow);
+    });
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    document.getElementById('loc-table').hidden = state.filtered.length === 0;
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' localidade encontrada' : ' localidades encontradas');
+
+    /* Delega clique nos botões "Detalhar" recém-criados */
+    tbody.querySelectorAll('[data-toggle]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = btn.getAttribute('data-toggle');
+        var detailRow = document.getElementById('loc-detail-' + idx);
+        var icon = document.getElementById('loc-icon-' + idx);
+        var isOpen = !detailRow.classList.contains('is-collapsed');
+        detailRow.classList.toggle('is-collapsed', isOpen);
+        icon.classList.toggle('is-open', !isOpen);
+        btn.lastChild.textContent = isOpen ? ' Detalhar' : ' Ocultar';
+      });
+    });
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var linha = document.getElementById('flt-linha').value.trim().toLowerCase();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+
+    state.filtered = LOCALIDADES.filter(function (loc) {
+      if (linha && loc.linha.toLowerCase().indexOf(linha) === -1) return false;
+      if (nome && loc.nome.toLowerCase().indexOf(nome) === -1) return false;
+      return true;
+    });
+    render();
+  }
+
+  function clearFilters() {
+    document.getElementById('flt-linha').value = '';
+    document.getElementById('flt-nome').value = '';
+    state.filtered = LOCALIDADES.slice();
+    render();
+  }
+
+  document.getElementById('btn-aplicar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  render();
+})();
+</script>

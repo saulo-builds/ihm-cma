@@ -1,0 +1,75 @@
+<!-- ===== Header — faixa CPTM, marca, breadcrumb do módulo/página, relógio e ações ===== -->
+<header class="app-header">
+  <!-- Faixa vermelha de assinatura visual CPTM -->
+  <div class="app-header__accent"></div>
+
+  <!-- Marca — largura acompanha a sidebar (colapsa junto) -->
+  <div class="app-header__brand">
+    <div class="app-header__logo" aria-hidden="true"></div>
+    <div class="app-header__brand-text">
+      <span class="app-header__brand-name">CPTM</span>
+      <span class="app-header__brand-sub">CMA · Monitoramento de Ativos</span>
+    </div>
+  </div>
+
+  <!-- Breadcrumb do módulo/página atual — atualizado pelo router -->
+  <div class="app-header__title">
+    <span class="app-header__module" id="header-module">Monitoramento</span>
+    <span class="app-header__sep">&rsaquo;</span>
+    <span class="app-header__page" id="header-page">Dashboard</span>
+  </div>
+
+  <div class="app-header__actions">
+    <!-- Relógio em tempo real — preenchido por js/clock.js -->
+    <div class="app-header__clock" id="clock">
+      <span class="app-header__clock-time" id="clock-time">--:--:--</span>
+      <span class="app-header__clock-date" id="clock-date">--/--/----</span>
+    </div>
+
+    <!-- Envio do conteúdo atual para a Tela 2 -->
+    <button class="btn btn-ghost btn-sm app-header__tela2" id="btn-tela2" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+      <span id="btn-tela2-label">Enviar p/ Tela 2</span>
+    </button>
+
+    <!-- Sino de notificações + badge contador + painel dropdown -->
+    <div class="app-header__notif" id="notif-wrap">
+      <button class="app-header__icon-btn" id="btn-notif" type="button" aria-haspopup="true" aria-expanded="false" title="Notificações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="app-header__notif-badge" id="notif-badge">0</span>
+      </button>
+
+      <div class="app-header__notif-panel" id="notif-panel" hidden>
+        <div class="app-header__notif-header">
+          <span>Notificações</span>
+          <button class="app-header__notif-mark" id="notif-mark-all" type="button">Marcar todas como lidas</button>
+        </div>
+        <div class="app-header__notif-list" id="notif-list"><!-- injetado por js/notifications.js --></div>
+      </div>
+    </div>
+
+    <!-- Colapsar/expandir sidebar -->
+    <button class="app-header__icon-btn" id="btn-collapse" type="button" title="Colapsar menu">
+      <svg id="icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="11 17 6 12 11 7"></polyline>
+        <polyline points="18 17 13 12 18 7"></polyline>
+      </svg>
+    </button>
+
+    <!-- Usuário logado -->
+    <div class="app-header__user">
+      <div class="app-header__avatar">SM</div>
+      <div class="app-header__user-text">
+        <span class="app-header__user-name">Saulo Lima</span>
+        <span class="app-header__user-role">Administrador</span>
+      </div>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,114 @@
+<!-- ===== Sidebar — navegação por módulo (Monitoramento, Cadastro, Relatórios, VideoWall) ===== -->
+<aside class="app-sidebar" id="sidebar">
+  <nav class="app-sidebar__nav">
+
+    <!-- Módulo: Monitoramento -->
+    <div class="app-sidebar__section" data-module="mon">
+      <div class="app-sidebar__section-label">Monitoramento</div>
+
+      <a class="app-sidebar__item" href="/" data-route="/" data-tooltip="Dashboard">
+        <span class="app-sidebar__icon">📊</span>
+        <span class="app-sidebar__label">Dashboard</span>
+      </a>
+      <a class="app-sidebar__item" href="/mapeamento" data-route="/mapeamento" data-tooltip="Mapeamento">
+        <span class="app-sidebar__icon">🗺️</span>
+        <span class="app-sidebar__label">Mapeamento</span>
+      </a>
+      <a class="app-sidebar__item" href="/tabela" data-route="/tabela" data-tooltip="Tabela">
+        <span class="app-sidebar__icon">📋</span>
+        <span class="app-sidebar__label">Tabela</span>
+      </a>
+      <a class="app-sidebar__item" href="/disponibilidade" data-route="/disponibilidade" data-tooltip="Disponibilidade">
+        <span class="app-sidebar__icon">📈</span>
+        <span class="app-sidebar__label">Disponibilidade</span>
+      </a>
+      <a class="app-sidebar__item" href="/localidade" data-route="/localidade" data-tooltip="Localidade">
+        <span class="app-sidebar__icon">📍</span>
+        <span class="app-sidebar__label">Localidade</span>
+      </a>
+      <a class="app-sidebar__item" href="/alarmes" data-route="/alarmes" data-tooltip="Alarmes">
+        <span class="app-sidebar__icon">🚨</span>
+        <span class="app-sidebar__label">Alarmes</span>
+        <span class="app-sidebar__badge">2</span>
+      </a>
+    </div>
+
+    <div class="app-sidebar__divider"></div>
+
+    <!-- Módulo: Cadastro -->
+    <div class="app-sidebar__section" data-module="cad">
+      <div class="app-sidebar__section-label">Cadastro</div>
+
+      <a class="app-sidebar__item" href="/cadastro/mda" data-route="/cadastro/mda" data-tooltip="MDA">
+        <span class="app-sidebar__icon">📡</span>
+        <span class="app-sidebar__label">MDA</span>
+      </a>
+      <a class="app-sidebar__item" href="/cadastro/status" data-route="/cadastro/status" data-tooltip="Status">
+        <span class="app-sidebar__icon">🏷️</span>
+        <span class="app-sidebar__label">Status</span>
+      </a>
+      <a class="app-sidebar__item" href="/cadastro/tipo-equipamento" data-route="/cadastro/tipo-equipamento" data-tooltip="Tipo de Equipamento">
+        <span class="app-sidebar__icon">🔧</span>
+        <span class="app-sidebar__label">Tipo de Equipamento</span>
+      </a>
+      <a class="app-sidebar__item" href="/cadastro/equipamento" data-route="/cadastro/equipamento" data-tooltip="Equipamento">
+        <span class="app-sidebar__icon">⚙️</span>
+        <span class="app-sidebar__label">Equipamento</span>
+      </a>
+      <a class="app-sidebar__item" href="/cadastro/notificacao" data-route="/cadastro/notificacao" data-tooltip="Notificação">
+        <span class="app-sidebar__icon">🔔</span>
+        <span class="app-sidebar__label">Notificação</span>
+      </a>
+      <a class="app-sidebar__item" href="/cadastro/usuarios" data-route="/cadastro/usuarios" data-tooltip="Usuários">
+        <span class="app-sidebar__icon">👤</span>
+        <span class="app-sidebar__label">Usuários</span>
+      </a>
+    </div>
+
+    <div class="app-sidebar__divider"></div>
+
+    <!-- Módulo: Relatórios -->
+    <div class="app-sidebar__section" data-module="rel">
+      <div class="app-sidebar__section-label">Relatórios</div>
+
+      <a class="app-sidebar__item" href="/relatorios/disponibilidade" data-route="/relatorios/disponibilidade" data-tooltip="Disponibilidade">
+        <span class="app-sidebar__icon">📄</span>
+        <span class="app-sidebar__label">Disponibilidade</span>
+      </a>
+      <a class="app-sidebar__item" href="/relatorios/historico-alarmes" data-route="/relatorios/historico-alarmes" data-tooltip="Hist. Alarmes">
+        <span class="app-sidebar__icon">🗂️</span>
+        <span class="app-sidebar__label">Hist. Alarmes</span>
+      </a>
+      <a class="app-sidebar__item" href="/relatorios/mtbf-mttr" data-route="/relatorios/mtbf-mttr" data-tooltip="MTBF/MTTR">
+        <span class="app-sidebar__icon">📉</span>
+        <span class="app-sidebar__label">MTBF/MTTR</span>
+      </a>
+      <a class="app-sidebar__item" href="/relatorios/resumo-mensal" data-route="/relatorios/resumo-mensal" data-tooltip="Resumo Mensal">
+        <span class="app-sidebar__icon">📆</span>
+        <span class="app-sidebar__label">Resumo Mensal</span>
+      </a>
+      <a class="app-sidebar__item" href="/relatorios/indisponibilidade-linha" data-route="/relatorios/indisponibilidade-linha" data-tooltip="Indisp. por Linha">
+        <span class="app-sidebar__icon">🚇</span>
+        <span class="app-sidebar__label">Indisp. por Linha</span>
+      </a>
+    </div>
+
+    <div class="app-sidebar__divider"></div>
+
+    <!-- Módulo: VideoWall -->
+    <div class="app-sidebar__section" data-module="vw">
+      <div class="app-sidebar__section-label">VideoWall</div>
+
+      <a class="app-sidebar__item" href="/videowall" data-route="/videowall" data-tooltip="VideoWall">
+        <span class="app-sidebar__icon">📺</span>
+        <span class="app-sidebar__label">VideoWall</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Rodapé — status de conexão do sistema -->
+  <div class="app-sidebar__footer">
+    <span class="app-sidebar__status-dot"></span>
+    <span class="app-sidebar__status-text">Sistema online</span>
+  </div>
+</aside>

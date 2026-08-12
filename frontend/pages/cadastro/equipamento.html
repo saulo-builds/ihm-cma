@@ -1,0 +1,1003 @@
+<!-- ==================================================================
+     Equipamento — Cadastro (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cad);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Card de filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .filters-grid + .filters-grid {
+    margin-top: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Card de resultados ===== */
+  .results-count {
+    font-size: 12px;
+    color: var(--text-md);
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* Badge de status "Parcial" — não coberto por badge.css, complementado localmente */
+  .badge-status.status-parcial {
+    background: var(--parcial-lo);
+    color: var(--parcial-hi);
+    border: 1px solid var(--parcial);
+  }
+  .badge-status.status-parcial .dot {
+    background: var(--parcial-hi);
+  }
+
+  /* ===== Toggle Ativo/Inativo ===== */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--surface-3);
+    border: 1px solid var(--border-hi);
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-md);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: color-mix(in srgb, var(--ok) 30%, transparent);
+    border-color: var(--ok);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(18px);
+    background: var(--ok-hi);
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text-hi);
+  }
+
+  .textarea {
+    display: block;
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-hi);
+    border-radius: var(--radius-sm);
+    color: var(--text-hi);
+    font-family: var(--font);
+    font-size: 13px;
+    resize: vertical;
+  }
+
+  .textarea:focus {
+    outline: none;
+    border-color: var(--mon);
+  }
+
+  /* ===== Modais (<dialog> nativo) ===== */
+  dialog.modal {
+    border: none;
+    padding: 0;
+    width: 560px;
+    max-width: 92vw;
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    color: var(--text-hi);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  dialog.modal.modal-sm {
+    width: 440px;
+  }
+
+  dialog.modal::backdrop {
+    background: rgba(4, 4, 12, 0.7);
+  }
+
+  dialog.modal[open] {
+    animation: modal-in 0.15s ease;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-md);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-hi);
+  }
+
+  .modal-body {
+    padding: 18px;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .form-field.full {
+    grid-column: 1 / -1;
+  }
+
+  /* ===== Modal Detalhar — visualização somente leitura ===== */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .detail-field__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-md);
+    margin-bottom: 4px;
+  }
+
+  .detail-field__value {
+    font-size: 14px;
+    color: var(--text-hi);
+    font-weight: 600;
+  }
+
+  /* ===== Modal Histórico ===== */
+  .hist-empty {
+    padding: 36px 16px;
+    text-align: center;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .hist-empty svg {
+    display: block;
+    margin: 0 auto 10px;
+    width: 30px;
+    height: 30px;
+    color: var(--text-lo);
+  }
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  dialog.modal-confirm {
+    width: 380px;
+  }
+
+  .confirm-body {
+    padding: 22px 18px;
+    text-align: center;
+  }
+
+  .confirm-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--crit-lo);
+    border: 1px solid var(--crit);
+    color: var(--crit-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .confirm-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+    margin-bottom: 4px;
+  }
+
+  .confirm-subtext {
+    font-size: 12.5px;
+    color: var(--text-md);
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 1300px) {
+    .filters-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid,
+    .form-grid,
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Cadastro</div>
+  <h1 class="page-header__title">Equipamento</h1>
+  <p class="page-header__desc">Ativos monitorados cadastrados no sistema</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div class="card-title">Filtros</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-id">ID</label>
+        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipo">Tipo</label>
+        <select class="select" id="flt-tipo">
+          <option value="">Todos</option>
+          <option value="Fibra">Fibra</option>
+          <option value="Hidráulico">Hidráulico</option>
+          <option value="Energia">Energia</option>
+          <option value="Sinalização">Sinalização</option>
+          <option value="Fibra/Comun.">Fibra/Comun.</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-transmissor">Transmissor/MDA</label>
+        <select class="select" id="flt-transmissor">
+          <option value="">Todos</option>
+          <option value="MDA-TAM-01">MDA-TAM-01</option>
+          <option value="MDA-BRS-01">MDA-BRS-01</option>
+          <option value="MDA-LUZ-01">MDA-LUZ-01</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-codigo">Código/Tag</label>
+        <input type="text" class="input" id="flt-codigo" placeholder="Ex.: FB-EBL-01" />
+      </div>
+      <div>
+        <label class="form-label" for="flt-nome">Nome</label>
+        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+      </div>
+    </div>
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-linha">Linha</label>
+        <select class="select" id="flt-linha">
+          <option value="">Todas</option>
+          <option value="L10">Linha 10</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-tipolocal">Tipo de Local</label>
+        <select class="select" id="flt-tipolocal">
+          <option value="">Todos</option>
+          <option value="Sala Técnica">Sala Técnica</option>
+          <option value="Estação">Estação</option>
+          <option value="CCO">CCO</option>
+          <option value="Trecho">Trecho</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-local">Local</label>
+        <input type="text" class="input" id="flt-local" placeholder="Buscar por local..." />
+      </div>
+      <div>
+        <label class="form-label" for="flt-status">Status</label>
+        <select class="select" id="flt-status">
+          <option value="">Todos</option>
+          <option value="Online">Online</option>
+          <option value="Alerta">Alerta</option>
+          <option value="Crítico">Crítico</option>
+          <option value="Offline">Offline</option>
+          <option value="Parcial">Parcial</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-ativo">Ativo</label>
+        <select class="select" id="flt-ativo">
+          <option value="">Todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Resultados ===== -->
+<div class="page-section card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Resultados</div>
+      <div class="card-subtitle" id="results-count">8 registros encontrados</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table" id="equip-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Local</th>
+          <th>Transmissor</th>
+          <th>Horário Operacional</th>
+          <th>Status</th>
+          <th>Valor</th>
+          <th>Última Comunicação</th>
+          <th>Ativo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="equip-tbody">
+        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+      </tbody>
+    </table>
+    <div class="table-empty" id="table-empty" hidden>Nenhum equipamento encontrado para os filtros aplicados.</div>
+  </div>
+</div>
+
+<!-- ===== Modal Incluir / Alterar ===== -->
+<dialog class="modal" id="modal-form">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-form-title">Incluir Equipamento</div>
+    <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="form-codigo">Código/Tag</label>
+        <input type="text" class="input" id="form-codigo" placeholder="Ex.: FB-EBL-01" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-nome">Nome</label>
+        <input type="text" class="input" id="form-nome" placeholder="Ex.: Mon. Fibra Ebilock Luz L10" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-tipo">Tipo</label>
+        <select class="select" id="form-tipo">
+          <option value="Fibra">Fibra</option>
+          <option value="Hidráulico">Hidráulico</option>
+          <option value="Energia">Energia</option>
+          <option value="Sinalização">Sinalização</option>
+          <option value="Fibra/Comun.">Fibra/Comun.</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-local">Local</label>
+        <input type="text" class="input" id="form-local" placeholder="Ex.: Sala Técnica LUZ" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-transmissor">Transmissor/MDA</label>
+        <select class="select" id="form-transmissor">
+          <option value="MDA-TAM-01">MDA-TAM-01</option>
+          <option value="MDA-BRS-01">MDA-BRS-01</option>
+          <option value="MDA-LUZ-01">MDA-LUZ-01</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-linha">Linha</label>
+        <select class="select" id="form-linha">
+          <option value="L10">Linha 10</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-tipolocal">Tipo de Local</label>
+        <select class="select" id="form-tipolocal">
+          <option value="Sala Técnica">Sala Técnica</option>
+          <option value="Estação">Estação</option>
+          <option value="CCO">CCO</option>
+          <option value="Trecho">Trecho</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-horario">Horário Operacional</label>
+        <input type="text" class="input" id="form-horario" placeholder="Ex.: 24h ou 06-22h" />
+      </div>
+      <div class="form-field full">
+        <label class="form-label">Ativo</label>
+        <label class="toggle">
+          <input type="checkbox" id="form-ativo" checked />
+          <span class="toggle-track"></span>
+          <span class="toggle-label" id="form-ativo-label">Ativo</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Detalhar ===== -->
+<dialog class="modal" id="modal-detail">
+  <div class="modal-header">
+    <div class="modal-title">Detalhes do Equipamento</div>
+    <button type="button" class="modal-close" data-close="modal-detail" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid">
+      <div>
+        <div class="detail-field__label">ID</div>
+        <div class="detail-field__value" id="det-id">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Código/Tag</div>
+        <div class="detail-field__value" id="det-codigo">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Nome</div>
+        <div class="detail-field__value" id="det-nome">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Tipo</div>
+        <div class="detail-field__value" id="det-tipo">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Local</div>
+        <div class="detail-field__value" id="det-local">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Tipo de Local</div>
+        <div class="detail-field__value" id="det-tipolocal">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Transmissor/MDA</div>
+        <div class="detail-field__value" id="det-transmissor">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Linha</div>
+        <div class="detail-field__value" id="det-linha">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Horário Operacional</div>
+        <div class="detail-field__value" id="det-horario">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Status</div>
+        <div class="detail-field__value" id="det-status">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Valor</div>
+        <div class="detail-field__value" id="det-valor">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Última Comunicação</div>
+        <div class="detail-field__value" id="det-comunicacao">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Ativo</div>
+        <div class="detail-field__value" id="det-ativo">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-detail">Fechar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Alterar Status ===== -->
+<dialog class="modal modal-sm" id="modal-status">
+  <div class="modal-header">
+    <div class="modal-title">Alterar Status</div>
+    <button type="button" class="modal-close" data-close="modal-status" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid" style="grid-template-columns: 1fr;">
+      <div class="form-field">
+        <label class="form-label" for="status-select">Status</label>
+        <select class="select" id="status-select">
+          <option value="Online">Online</option>
+          <option value="Alerta">Alerta</option>
+          <option value="Crítico">Crítico</option>
+          <option value="Offline">Offline</option>
+          <option value="Parcial">Parcial</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="status-obs">Observação</label>
+        <textarea class="textarea" id="status-obs" placeholder="Descreva o motivo da alteração..."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-status">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-status">Salvar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal Histórico ===== -->
+<dialog class="modal" id="modal-historico">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-historico-title">Histórico do Equipamento</div>
+    <button type="button" class="modal-close" data-close="modal-historico" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Status anterior</th>
+            <th>Status novo</th>
+            <th>Alterado por</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="hist-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <line x1="8" y1="14" x2="16" y2="14"></line>
+        </svg>
+        Nenhum histórico registrado
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-historico">Fechar</button>
+  </div>
+</dialog>
+
+<!-- ===== Modal de confirmação de exclusão ===== -->
+<dialog class="modal modal-confirm" id="modal-confirm">
+  <div class="confirm-body">
+    <div class="confirm-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      </svg>
+    </div>
+    <div class="confirm-text">Confirmar exclusão?</div>
+    <div class="confirm-subtext" id="confirm-subtext">Esta ação não poderá ser desfeita.</div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-confirm">Cancelar</button>
+    <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao">Confirmar</button>
+  </div>
+</dialog>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===== Dataset mockado dos 8 ativos ===== */
+  var EQUIPAMENTOS = [
+    { id: 1, codigo: 'FB-EBL-01', nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', transmissor: 'MDA-LUZ-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:30', ativo: true },
+    { id: 2, codigo: 'HID-TAM-01', nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 3, codigo: 'ELE-TAM-01', nome: 'Sistemas Elétricos', tipo: 'Energia', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 4, codigo: 'GER-TAM-01', nome: 'Grupo Gerador', tipo: 'Energia', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 5, codigo: 'ELE-BRS-01', nome: 'Sistemas Elétricos', tipo: 'Energia', local: 'CCO Brás', tipoLocal: 'CCO', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 6, codigo: 'CTC-TAM-01', nome: 'Monitoramento CTC', tipo: 'Sinalização', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 7, codigo: 'AMV-BRS-01', nome: 'Monitoramento AMV', tipo: 'Sinalização', local: 'Brás — L10', tipoLocal: 'Estação', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '06-22h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
+    { id: 8, codigo: 'STO-L10-01', nome: 'STO L10', tipo: 'Fibra/Comun.', local: 'Linha 10', tipoLocal: 'Trecho', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true }
+  ];
+
+  var CAT_CLASS = {
+    'Fibra': 'cat-fibra',
+    'Hidráulico': 'cat-hidraulico',
+    'Energia': 'cat-energia',
+    'Sinalização': 'cat-sinalizacao',
+    'Fibra/Comun.': 'cat-fibra-com'
+  };
+
+  var STATUS_CLASS = {
+    'Online': 'status-ok',
+    'Alerta': 'status-alert',
+    'Crítico': 'status-crit',
+    'Offline': 'status-offline',
+    'Parcial': 'status-parcial'
+  };
+
+  var nextId = EQUIPAMENTOS.length + 1;
+  var state = { filtered: EQUIPAMENTOS.slice() };
+  var editingId = null;
+  var statusTargetId = null;
+  var deletingId = null;
+
+  var tbody = document.getElementById('equip-tbody');
+  var emptyEl = document.getElementById('table-empty');
+  var countEl = document.getElementById('results-count');
+
+  function findById(id) {
+    for (var i = 0; i < EQUIPAMENTOS.length; i++) {
+      if (EQUIPAMENTOS[i].id === id) return EQUIPAMENTOS[i];
+    }
+    return null;
+  }
+
+  function statusBadge(status) {
+    var cls = STATUS_CLASS[status] || 'status-offline';
+    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + status + '</span>';
+  }
+
+  function render() {
+    tbody.innerHTML = state.filtered.map(function (e) {
+      return '<tr>' +
+        '<td class="td-mono">' + e.id + '</td>' +
+        '<td class="td-mono">' + e.codigo + '</td>' +
+        '<td class="hi">' + e.nome + '</td>' +
+        '<td><span class="cat ' + (CAT_CLASS[e.tipo] || '') + '">' + e.tipo + '</span></td>' +
+        '<td>' + e.local + '</td>' +
+        '<td class="td-mono">' + e.transmissor + '</td>' +
+        '<td>' + e.horario + '</td>' +
+        '<td>' + statusBadge(e.status) + '</td>' +
+        '<td class="td-mono">' + e.valor + '</td>' +
+        '<td>' + e.comunicacao + '</td>' +
+        '<td>' + (e.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + e.id + '">Detalhar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="status" data-id="' + e.id + '">Alterar Status</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + e.id + '">Alterar</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="historico" data-id="' + e.id + '">Histórico</button>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-action="excluir" data-id="' + e.id + '">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    emptyEl.hidden = state.filtered.length !== 0;
+    tbody.parentElement.hidden = state.filtered.length === 0;
+    countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
+  }
+
+  /* ===== Filtros ===== */
+  function applyFilters() {
+    var id = document.getElementById('flt-id').value.trim();
+    var tipo = document.getElementById('flt-tipo').value;
+    var transmissor = document.getElementById('flt-transmissor').value;
+    var codigo = document.getElementById('flt-codigo').value.trim().toLowerCase();
+    var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
+    var linha = document.getElementById('flt-linha').value;
+    var tipoLocal = document.getElementById('flt-tipolocal').value;
+    var local = document.getElementById('flt-local').value.trim().toLowerCase();
+    var status = document.getElementById('flt-status').value;
+    var ativo = document.getElementById('flt-ativo').value;
+
+    state.filtered = EQUIPAMENTOS.filter(function (e) {
+      if (id && String(e.id) !== id) return false;
+      if (tipo && e.tipo !== tipo) return false;
+      if (transmissor && e.transmissor !== transmissor) return false;
+      if (codigo && e.codigo.toLowerCase().indexOf(codigo) === -1) return false;
+      if (nome && e.nome.toLowerCase().indexOf(nome) === -1) return false;
+      if (linha && e.linha !== linha) return false;
+      if (tipoLocal && e.tipoLocal !== tipoLocal) return false;
+      if (local && e.local.toLowerCase().indexOf(local) === -1) return false;
+      if (status && e.status !== status) return false;
+      if (ativo === 'Ativo' && !e.ativo) return false;
+      if (ativo === 'Inativo' && e.ativo) return false;
+      return true;
+    });
+    render();
+  }
+
+  function clearFilters() {
+    ['flt-id', 'flt-codigo', 'flt-nome', 'flt-local'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    ['flt-tipo', 'flt-transmissor', 'flt-linha', 'flt-tipolocal', 'flt-status', 'flt-ativo'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    state.filtered = EQUIPAMENTOS.slice();
+    render();
+  }
+
+  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
+  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+
+  /* ===== Modal Incluir/Alterar ===== */
+  var modalForm = document.getElementById('modal-form');
+  var formAtivo = document.getElementById('form-ativo');
+  var formAtivoLabel = document.getElementById('form-ativo-label');
+
+  formAtivo.addEventListener('change', function () {
+    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
+  });
+
+  function openIncluir() {
+    editingId = null;
+    document.getElementById('modal-form-title').textContent = 'Incluir Equipamento';
+    document.getElementById('form-codigo').value = '';
+    document.getElementById('form-nome').value = '';
+    document.getElementById('form-tipo').value = 'Fibra';
+    document.getElementById('form-local').value = '';
+    document.getElementById('form-transmissor').value = 'MDA-TAM-01';
+    document.getElementById('form-linha').value = 'L10';
+    document.getElementById('form-tipolocal').value = 'Sala Técnica';
+    document.getElementById('form-horario').value = '24h';
+    formAtivo.checked = true;
+    formAtivoLabel.textContent = 'Ativo';
+    modalForm.showModal();
+  }
+
+  function openAlterar(id) {
+    var e = findById(id);
+    if (!e) return;
+    editingId = id;
+    document.getElementById('modal-form-title').textContent = 'Alterar Equipamento';
+    document.getElementById('form-codigo').value = e.codigo;
+    document.getElementById('form-nome').value = e.nome;
+    document.getElementById('form-tipo').value = e.tipo;
+    document.getElementById('form-local').value = e.local;
+    document.getElementById('form-transmissor').value = e.transmissor;
+    document.getElementById('form-linha').value = e.linha;
+    document.getElementById('form-tipolocal').value = e.tipoLocal;
+    document.getElementById('form-horario').value = e.horario;
+    formAtivo.checked = e.ativo;
+    formAtivoLabel.textContent = e.ativo ? 'Ativo' : 'Inativo';
+    modalForm.showModal();
+  }
+
+  document.getElementById('btn-incluir').addEventListener('click', openIncluir);
+
+  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+    var codigo = document.getElementById('form-codigo').value.trim();
+    var nome = document.getElementById('form-nome').value.trim();
+    if (!codigo || !nome) {
+      alert('Preencha Código/Tag e Nome antes de salvar.');
+      return;
+    }
+    var payload = {
+      codigo: codigo,
+      nome: nome,
+      tipo: document.getElementById('form-tipo').value,
+      local: document.getElementById('form-local').value.trim(),
+      transmissor: document.getElementById('form-transmissor').value,
+      linha: document.getElementById('form-linha').value,
+      tipoLocal: document.getElementById('form-tipolocal').value,
+      horario: document.getElementById('form-horario').value.trim() || '24h',
+      ativo: formAtivo.checked
+    };
+
+    if (editingId) {
+      var e = findById(editingId);
+      Object.assign(e, payload);
+    } else {
+      EQUIPAMENTOS.push(Object.assign({ id: nextId++, status: 'Online', valor: 'OK', comunicacao: '—' }, payload));
+    }
+    modalForm.close();
+    state.filtered = EQUIPAMENTOS.slice();
+    render();
+  });
+
+  /* ===== Modal Detalhar ===== */
+  var modalDetail = document.getElementById('modal-detail');
+
+  function openDetalhar(id) {
+    var e = findById(id);
+    if (!e) return;
+    document.getElementById('det-id').textContent = e.id;
+    document.getElementById('det-codigo').textContent = e.codigo;
+    document.getElementById('det-nome').textContent = e.nome;
+    document.getElementById('det-tipo').textContent = e.tipo;
+    document.getElementById('det-local').textContent = e.local;
+    document.getElementById('det-tipolocal').textContent = e.tipoLocal;
+    document.getElementById('det-transmissor').textContent = e.transmissor;
+    document.getElementById('det-linha').textContent = e.linha;
+    document.getElementById('det-horario').textContent = e.horario;
+    document.getElementById('det-status').innerHTML = statusBadge(e.status);
+    document.getElementById('det-valor').textContent = e.valor;
+    document.getElementById('det-comunicacao').textContent = e.comunicacao;
+    document.getElementById('det-ativo').textContent = e.ativo ? 'Sim' : 'Não';
+    modalDetail.showModal();
+  }
+
+  /* ===== Modal Alterar Status ===== */
+  var modalStatus = document.getElementById('modal-status');
+
+  function openStatus(id) {
+    var e = findById(id);
+    if (!e) return;
+    statusTargetId = id;
+    document.getElementById('status-select').value = e.status;
+    document.getElementById('status-obs').value = '';
+    modalStatus.showModal();
+  }
+
+  document.getElementById('btn-salvar-status').addEventListener('click', function () {
+    if (statusTargetId == null) return;
+    var e = findById(statusTargetId);
+    if (e) e.status = document.getElementById('status-select').value;
+    modalStatus.close();
+    render();
+  });
+
+  /* ===== Modal Histórico ===== */
+  var modalHistorico = document.getElementById('modal-historico');
+
+  function openHistorico(id) {
+    var e = findById(id);
+    if (!e) return;
+    document.getElementById('modal-historico-title').textContent = 'Histórico — ' + e.codigo;
+    modalHistorico.showModal();
+  }
+
+  /* ===== Modal de confirmação de exclusão ===== */
+  var modalConfirm = document.getElementById('modal-confirm');
+
+  function openExcluir(id) {
+    var e = findById(id);
+    if (!e) return;
+    deletingId = id;
+    document.getElementById('confirm-subtext').textContent = 'O equipamento "' + e.nome + '" será removido permanentemente.';
+    modalConfirm.showModal();
+  }
+
+  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+    if (deletingId == null) return;
+    var idx = EQUIPAMENTOS.findIndex(function (e) { return e.id === deletingId; });
+    if (idx !== -1) EQUIPAMENTOS.splice(idx, 1);
+    deletingId = null;
+    modalConfirm.close();
+    state.filtered = EQUIPAMENTOS.slice();
+    render();
+  });
+
+  /* ===== Delegação de cliques nas ações da tabela ===== */
+  tbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('[data-action]');
+    if (!btn) return;
+    var id = parseInt(btn.getAttribute('data-id'), 10);
+    var action = btn.getAttribute('data-action');
+    if (action === 'detalhar') openDetalhar(id);
+    else if (action === 'status') openStatus(id);
+    else if (action === 'alterar') openAlterar(id);
+    else if (action === 'historico') openHistorico(id);
+    else if (action === 'excluir') openExcluir(id);
+  });
+
+  /* ===== Fechamento de modais (botão ✕ / Cancelar) ===== */
+  document.querySelectorAll('[data-close]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = document.getElementById(btn.getAttribute('data-close'));
+      if (dialog) dialog.close();
+    });
+  });
+
+  render();
+})();
+</script>
