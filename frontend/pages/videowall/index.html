@@ -1,0 +1,1323 @@
+<!doctype html>
+<!--
+  VideoWall — CMA / Linha 10 (CPTM)
+  Documento HTML autônomo — NÃO é injetado pelo router do shell.
+  Zero interação: carrossel automático e ininterrupto, sem teclado/mouse.
+  Resolução mínima suportada: 61440×2160px (VideoWall Barco).
+  A tipografia usa clamp() com unidade vh para escalar proporcionalmente
+  do monitor de desenvolvimento até a parede de vídeo física.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VideoWall · CMA — Linha 10</title>
+
+<!-- ===== Importações — tokens globais, sem dependência do shell ===== -->
+<link rel="stylesheet" href="/tokens/reset.css" />
+<link rel="stylesheet" href="/tokens/design-tokens.css" />
+
+<style>
+  /* ==================================================================
+     Escala tipográfica do VideoWall
+     Cada variável usa clamp(mínimo, vh, máximo): o mínimo garante a
+     legibilidade exigida pelo ET em qualquer janela pequena; o fator
+     vh cresce com a altura do canvas, então a mesma marcação escala
+     corretamente do monitor de desenvolvimento (1080p) até o Barco
+     (2160px de altura ≈ 2x o fator de referência).
+  ==================================================================== */
+  :root {
+    --h-header: clamp(60px, 5.6vh, 170px);
+    --border-w: clamp(1px, 0.15vh, 4px);
+    --pad: clamp(12px, 1.6vh, 46px);
+    --gap: clamp(10px, 1.2vh, 34px);
+
+    --fs-brand-name: clamp(14px, 1.3vh, 34px);
+    --fs-brand-sub: clamp(11px, 1vh, 26px);
+    --fs-title: clamp(18px, 1.9vh, 46px);
+    --fs-clock-time: clamp(20px, 2.6vh, 60px);
+    --fs-clock-date: clamp(12px, 1.1vh, 28px);
+
+    --fs-painel-title: clamp(32px, 3vh, 100px);
+    --fs-kpi-label: clamp(16px, 1.5vh, 40px);
+    --fs-kpi-value: clamp(80px, 9.3vh, 260px);
+    --fs-value-sec: clamp(32px, 3.7vh, 120px);
+    --fs-status: clamp(24px, 2.3vh, 70px);
+    --fs-asset-name: clamp(20px, 1.9vh, 60px);
+    --fs-body: clamp(14px, 1.5vh, 40px);
+  }
+
+  html, body {
+    font-size: var(--fs-body);
+  }
+
+  /* ===== Header fixo — marca / título / relógio ===== */
+  .vw-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--h-header);
+    display: flex;
+    align-items: stretch;
+    background: #080814;
+    border-bottom: var(--border-w) solid var(--border);
+    z-index: 10;
+  }
+
+  /* Barra de progresso do painel ativo — colada na borda superior do header */
+  .vw-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: clamp(3px, 0.4vh, 10px);
+    background: var(--border);
+  }
+
+  .vw-progress__bar {
+    height: 100%;
+    width: 0%;
+    background: var(--vw);
+  }
+
+  .vw-header__brand {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 0.9vh, 24px);
+    padding: 0 var(--pad);
+    flex-shrink: 0;
+  }
+
+  .vw-header__logo {
+    width: clamp(16px, 1.7vh, 46px);
+    height: clamp(16px, 1.7vh, 46px);
+    flex-shrink: 0;
+    background: var(--cptm-red);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .vw-header__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .vw-header__brand-name {
+    font-size: var(--fs-brand-name);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-hi);
+  }
+
+  .vw-header__brand-sub {
+    font-size: var(--fs-brand-sub);
+    color: var(--text-md);
+  }
+
+  .vw-header__title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 var(--pad);
+  }
+
+  .vw-header__title span {
+    font-size: var(--fs-title);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-hi);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vw-header__right {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.4vh, 36px);
+    padding: 0 var(--pad);
+    flex-shrink: 0;
+  }
+
+  /* Dots — indicam qual dos 3 painéis do carrossel está ativo */
+  .vw-dots {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 0.7vh, 16px);
+  }
+
+  .vw-dot {
+    width: clamp(8px, 0.85vh, 20px);
+    height: clamp(8px, 0.85vh, 20px);
+    border-radius: 50%;
+    background: var(--border-hi);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .vw-dot.is-active {
+    background: var(--vw);
+    transform: scale(1.35);
+  }
+
+  .vw-header__clock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: var(--font-mono);
+    line-height: 1.25;
+  }
+
+  .vw-header__clock-time {
+    font-size: var(--fs-clock-time);
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .vw-header__clock-date {
+    font-size: var(--fs-clock-date);
+    color: var(--text-md);
+  }
+
+  /* ===== Área principal — ocupa o restante da viewport abaixo do header ===== */
+  .vw-main {
+    position: fixed;
+    top: var(--h-header);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  /* Painéis do carrossel — empilhados, alternam via crossfade de opacidade */
+  .vw-painel {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 600ms ease;
+    z-index: 1;
+  }
+
+  .vw-painel.is-active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .painel-titulo {
+    font-size: var(--fs-painel-title);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-hi);
+  }
+
+  /* ==================================================================
+     PAINEL 1 — Georreferenciamento
+  ==================================================================== */
+  #painel-geo {
+    display: flex;
+    height: 100%;
+  }
+
+  .geo-map {
+    flex: 0 0 70%;
+    min-width: 0;
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  .geo-map__svg-wrap {
+    flex: 1;
+    min-height: 0;
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    border: var(--border-w) solid var(--border);
+  }
+
+  .geo-map__svg-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .map-linha {
+    stroke: var(--border-hi);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  .map-estacao {
+    fill: var(--surface-2);
+    stroke: var(--border-hi);
+    stroke-width: 3;
+  }
+
+  .map-estacao-label {
+    fill: var(--text-md);
+    font-family: var(--font);
+    font-size: 20px;
+    font-weight: 600;
+    text-anchor: middle;
+  }
+
+  .map-conector {
+    stroke: var(--border-hi);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+    fill: none;
+  }
+
+  .map-pin {
+    fill: var(--ok-hi);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .map-pin.is-parcial {
+    stroke: var(--parcial-hi);
+    stroke-width: 3;
+    stroke-dasharray: 5 3;
+    animation: map-pin-pulso 2.2s ease-in-out infinite;
+  }
+
+  .map-pin-label {
+    fill: var(--text-hi);
+    font-family: var(--font);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .map-pin-label__sub {
+    fill: var(--text-md);
+    font-family: var(--font);
+    font-size: 14px;
+  }
+
+  @keyframes map-pin-pulso {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(1.15); }
+  }
+
+  .geo-side {
+    flex: 0 0 30%;
+    min-width: 0;
+    border-left: var(--border-w) solid var(--border);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    overflow: hidden;
+  }
+
+  .geo-side__titulo {
+    font-size: var(--fs-status);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-hi);
+  }
+
+  .geo-side__lista {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.5);
+  }
+
+  .asset-block {
+    background: var(--ok-lo);
+    border-left: clamp(3px, 0.35vh, 8px) solid var(--ok-hi);
+    border-radius: var(--radius-sm);
+    padding: calc(var(--pad) * 0.5) var(--pad);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap);
+  }
+
+  .asset-block.is-parcial {
+    border-left-color: var(--parcial-hi);
+  }
+
+  .asset-block__info {
+    min-width: 0;
+  }
+
+  .asset-block__nome {
+    font-size: var(--fs-asset-name);
+    font-weight: 700;
+    color: var(--text-hi);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .asset-block__local {
+    font-size: calc(var(--fs-asset-name) * 0.6);
+    color: var(--text-md);
+    margin-top: 2px;
+  }
+
+  .asset-block__badge {
+    flex-shrink: 0;
+    font-size: calc(var(--fs-asset-name) * 0.55);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ok-hi);
+    white-space: nowrap;
+  }
+
+  .geo-side__kpis {
+    flex-shrink: 0;
+    display: flex;
+    gap: var(--gap);
+    padding-top: var(--gap);
+    border-top: var(--border-w) solid var(--border);
+  }
+
+  .geo-kpi {
+    flex: 1;
+    text-align: center;
+  }
+
+  .geo-kpi__valor {
+    font-family: var(--font-mono);
+    font-size: var(--fs-value-sec);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .geo-kpi__valor.cor-ok { color: var(--ok-hi); }
+  .geo-kpi__valor.cor-parcial { color: var(--parcial-hi); }
+  .geo-kpi__valor.cor-offline { color: var(--offline); }
+
+  .geo-kpi__label {
+    font-size: calc(var(--fs-kpi-label) * 0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-md);
+    margin-top: 4px;
+  }
+
+  /* ==================================================================
+     PAINEL 2 — Recursos e Insumos
+  ==================================================================== */
+  #painel-rec {
+    height: 100%;
+    padding: var(--pad);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: var(--gap);
+  }
+
+  .rec-card {
+    background: var(--surface-1);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.6);
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .rec-card__titulo {
+    font-size: calc(var(--fs-status) * 0.72);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-hi);
+    flex-shrink: 0;
+  }
+
+  .rec-card__corpo {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--gap) * 0.6);
+  }
+
+  /* Instrumento radial — canvas + rótulo central sobreposto */
+  .gauge-wrap {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .gauge-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .gauge-wrap__label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .gauge-wrap__valor {
+    font-family: var(--font-mono);
+    font-size: var(--fs-value-sec);
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .gauge-wrap__status {
+    font-size: calc(var(--fs-kpi-label) * 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ok-hi);
+    margin-top: 2px;
+  }
+
+  /* Bloco cromático sólido — usado nos cards de status binário/operante */
+  .bloco-status {
+    width: 100%;
+    padding: var(--pad);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: calc(var(--fs-status) * 0.85);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bloco-status.bloco-ok {
+    background: var(--ok-lo);
+    color: var(--ok-hi);
+  }
+
+  .bloco-status.bloco-neutro {
+    background: var(--surface-2);
+    color: var(--text-md);
+  }
+
+  /* Barras de fase (R/S/T) e demais medidores lineares espessos */
+  .fase-lista {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.45);
+  }
+
+  .fase-item {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--gap) * 0.5);
+  }
+
+  .fase-item__label {
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-kpi-label) * 0.7);
+    font-weight: 700;
+    color: var(--text-md);
+    width: 1.6em;
+    flex-shrink: 0;
+  }
+
+  .fase-item__trilho {
+    flex: 1;
+    height: clamp(10px, 1.1vh, 30px);
+    background: var(--surface-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .fase-item__preenchido {
+    height: 100%;
+    background: var(--ok-hi);
+    border-radius: 999px;
+  }
+
+  .fase-item__valor {
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-kpi-label) * 0.7);
+    color: var(--text-hi);
+    width: 3em;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .medidor-linear {
+    width: 100%;
+  }
+
+  .medidor-linear__topo {
+    display: flex;
+    justify-content: space-between;
+    font-size: calc(var(--fs-kpi-label) * 0.65);
+    color: var(--text-md);
+    margin-bottom: calc(var(--gap) * 0.35);
+  }
+
+  .medidor-linear__topo strong {
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-value-sec) * 0.5);
+    color: var(--text-hi);
+  }
+
+  .medidor-linear__trilho {
+    width: 100%;
+    height: clamp(12px, 1.3vh, 34px);
+    background: var(--surface-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .medidor-linear__preenchido {
+    height: 100%;
+    background: var(--ok-hi);
+    border-radius: 999px;
+  }
+
+  /* ==================================================================
+     PAINEL 3 — Disponibilidade
+  ==================================================================== */
+  #painel-disp {
+    display: flex;
+    height: 100%;
+  }
+
+  .disp-esquerda {
+    flex: 0 0 60%;
+    min-width: 0;
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  .disp-kpis {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: var(--gap);
+  }
+
+  .disp-kpi {
+    background: var(--surface-1);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .disp-kpi__valor {
+    font-family: var(--font-mono);
+    font-size: var(--fs-kpi-value);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-hi);
+  }
+
+  .disp-kpi__valor.cor-ok { color: var(--ok-hi); }
+  .disp-kpi__valor.cor-parcial { color: var(--parcial-hi); }
+  .disp-kpi__valor.cor-offline { color: var(--offline); }
+
+  .disp-kpi__label {
+    font-size: var(--fs-kpi-label);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-md);
+    margin-top: calc(var(--gap) * 0.4);
+  }
+
+  .disp-barra-wrap {
+    flex-shrink: 0;
+  }
+
+  .disp-barra-wrap__label {
+    font-size: var(--fs-kpi-label);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-md);
+    margin-bottom: calc(var(--gap) * 0.5);
+  }
+
+  .disp-barra-wrap__linha {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+  }
+
+  .disp-barra-wrap__trilho {
+    flex: 1;
+    height: clamp(24px, 2vh, 56px);
+    background: var(--surface-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .disp-barra-wrap__preenchido {
+    height: 100%;
+    background: var(--ok-hi);
+    border-radius: 999px;
+  }
+
+  .disp-barra-wrap__valor {
+    font-family: var(--font-mono);
+    font-size: var(--fs-value-sec);
+    font-weight: 700;
+    color: var(--ok-hi);
+    flex-shrink: 0;
+    min-width: 3.2em;
+    text-align: right;
+  }
+
+  .disp-direita {
+    flex: 0 0 40%;
+    min-width: 0;
+    border-left: var(--border-w) solid var(--border);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.5);
+  }
+
+  .cat-bloco {
+    flex: 1 1 0;
+    background: var(--ok-lo);
+    border: var(--border-w) solid var(--ok-hi);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--pad);
+    min-height: 0;
+  }
+
+  .cat-bloco__nome {
+    font-size: calc(var(--fs-status) * 0.85);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ok-hi);
+  }
+
+  .cat-bloco__meta {
+    font-size: calc(var(--fs-kpi-label) * 0.8);
+    color: var(--text-hi);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .cat-bloco__meta strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-value-sec) * 0.5);
+    color: var(--ok-hi);
+  }
+
+  /* ==================================================================
+     MODO CRISE — layout de falha crítica, substitui o carrossel
+  ==================================================================== */
+  #painel-crise {
+    background: var(--crit-lo);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  #painel-crise .painel-titulo {
+    color: var(--crit-hi);
+    flex-shrink: 0;
+  }
+
+  .crise-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--gap);
+    overflow-y: auto;
+  }
+
+  .crise-card {
+    background: var(--surface-1);
+    border: clamp(2px, 0.3vh, 6px) solid var(--crit-hi);
+    border-radius: var(--radius);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.4);
+  }
+
+  .crise-card__nome {
+    font-size: var(--fs-status);
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .crise-card__local {
+    font-size: calc(var(--fs-status) * 0.6);
+    color: var(--text-md);
+  }
+
+  .crise-card__timer {
+    font-family: var(--font-mono);
+    font-size: var(--fs-value-sec);
+    font-weight: 700;
+    color: var(--crit-hi);
+    margin-top: calc(var(--gap) * 0.3);
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Header — marca, título e relógio ===== -->
+<header class="vw-header">
+  <div class="vw-progress" aria-hidden="true">
+    <div class="vw-progress__bar" id="vw-progress-bar"></div>
+  </div>
+
+  <div class="vw-header__brand">
+    <div class="vw-header__logo" aria-hidden="true"></div>
+    <div class="vw-header__brand-text">
+      <span class="vw-header__brand-name">CPTM</span>
+      <span class="vw-header__brand-sub">CMA · Centro de Monitoramento de Ativos</span>
+    </div>
+  </div>
+
+  <div class="vw-header__title">
+    <span>Monitoramento de Ativos — Linha 10</span>
+  </div>
+
+  <div class="vw-header__right">
+    <div class="vw-dots" id="vw-dots" aria-hidden="true">
+      <span class="vw-dot is-active" data-dot="0"></span>
+      <span class="vw-dot" data-dot="1"></span>
+      <span class="vw-dot" data-dot="2"></span>
+    </div>
+    <div class="vw-header__clock">
+      <span class="vw-header__clock-time" id="vw-clock-time">--:--:--</span>
+      <span class="vw-header__clock-date" id="vw-clock-date">--/--/----</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Área principal — carrossel de painéis ===== -->
+<main class="vw-main">
+
+  <!-- ===== PAINEL 1 — Georreferenciamento (30s) ===== -->
+  <section class="vw-painel is-active" id="painel-geo">
+    <div class="geo-map">
+      <div class="geo-map__svg-wrap">
+        <svg viewBox="0 0 1850 650" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Traçado da Linha 10 -->
+          <line class="map-linha" x1="100" y1="400" x2="1550" y2="400"></line>
+
+          <!-- Estações -->
+          <circle class="map-estacao" cx="100" cy="400" r="16"></circle>
+          <text class="map-estacao-label" x="100" y="450">Luz</text>
+
+          <circle class="map-estacao" cx="450" cy="400" r="16"></circle>
+          <text class="map-estacao-label" x="450" y="450">Brás</text>
+
+          <circle class="map-estacao" cx="850" cy="400" r="16"></circle>
+          <text class="map-estacao-label" x="850" y="450">Tamanduateí</text>
+
+          <circle class="map-estacao" cx="1250" cy="400" r="16"></circle>
+          <text class="map-estacao-label" x="1250" y="450">Cangaíba</text>
+
+          <circle class="map-estacao" cx="1550" cy="400" r="16"></circle>
+          <text class="map-estacao-label" x="1550" y="450">Guaianases</text>
+
+          <!-- ===== Pins — Luz: Mon. Fibra Ebilock (parcial) ===== -->
+          <path class="map-conector" d="M 100 262 L 100 388"></path>
+          <circle class="map-pin is-parcial" r="20" cx="100" cy="250"></circle>
+          <text class="map-pin-label" x="128" y="245">Fibra Ebilock Luz</text>
+          <text class="map-pin-label__sub" x="128" y="264">Sala Técnica LUZ</text>
+
+          <!-- ===== Pins — Brás: Elétricos CCO + AMV ===== -->
+          <path class="map-conector" d="M 450 232 L 450 388"></path>
+          <circle class="map-pin" r="20" cx="450" cy="220"></circle>
+          <text class="map-pin-label" x="478" y="215">Elétricos CCO Brás</text>
+          <text class="map-pin-label__sub" x="478" y="234">CCO Brás</text>
+
+          <path class="map-conector" d="M 450 302 L 450 388"></path>
+          <circle class="map-pin" r="20" cx="450" cy="290"></circle>
+          <text class="map-pin-label" x="478" y="285">AMV</text>
+          <text class="map-pin-label__sub" x="478" y="304">Brás — Linha 10</text>
+
+          <!-- ===== Pins — Tamanduateí: Bombas, Elétricos, Gerador, CTC ===== -->
+          <path class="map-conector" d="M 850 142 L 850 388"></path>
+          <circle class="map-pin" r="20" cx="850" cy="130"></circle>
+          <text class="map-pin-label" x="878" y="125">Acion. de Bombas</text>
+          <text class="map-pin-label__sub" x="878" y="144">Est. Tamanduateí</text>
+
+          <path class="map-conector" d="M 850 212 L 850 388"></path>
+          <circle class="map-pin" r="20" cx="850" cy="200"></circle>
+          <text class="map-pin-label" x="878" y="195">Elétricos Tamanduateí</text>
+          <text class="map-pin-label__sub" x="878" y="214">Est. Tamanduateí</text>
+
+          <path class="map-conector" d="M 850 282 L 850 388"></path>
+          <circle class="map-pin" r="20" cx="850" cy="270"></circle>
+          <text class="map-pin-label" x="878" y="265">Grupo Gerador</text>
+          <text class="map-pin-label__sub" x="878" y="284">Est. Tamanduateí</text>
+
+          <path class="map-conector" d="M 850 352 L 850 388"></path>
+          <circle class="map-pin" r="20" cx="850" cy="340"></circle>
+          <text class="map-pin-label" x="878" y="335">Monitoramento CTC</text>
+          <text class="map-pin-label__sub" x="878" y="354">Est. Tamanduateí</text>
+
+          <!-- ===== Pin — STO L10 (trecho, parcial) ===== -->
+          <path class="map-conector" d="M 1050 412 L 1050 538"></path>
+          <circle class="map-pin is-parcial" r="20" cx="1050" cy="550"></circle>
+          <text class="map-pin-label" x="1078" y="545">STO L10</text>
+          <text class="map-pin-label__sub" x="1078" y="564">Linha 10 (trecho)</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="geo-side">
+      <div class="geo-side__titulo">Status dos Ativos</div>
+      <div class="geo-side__lista" id="geo-lista"><!-- preenchido via JS a partir de ATIVOS --></div>
+      <div class="geo-side__kpis">
+        <div class="geo-kpi">
+          <div class="geo-kpi__valor cor-ok" id="kpi-online">--</div>
+          <div class="geo-kpi__label">Online</div>
+        </div>
+        <div class="geo-kpi">
+          <div class="geo-kpi__valor cor-parcial" id="kpi-parcial">--</div>
+          <div class="geo-kpi__label">Parcial</div>
+        </div>
+        <div class="geo-kpi">
+          <div class="geo-kpi__valor cor-offline" id="kpi-offline">--</div>
+          <div class="geo-kpi__label">Offline</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PAINEL 2 — Recursos e Insumos (25s) ===== -->
+  <section class="vw-painel" id="painel-rec">
+
+    <!-- Card 1 — Sistema Hidráulico -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Sist. Acionamento de Bombas</div>
+      <div class="rec-card__corpo">
+        <div class="gauge-wrap">
+          <canvas id="gauge-hidraulico"></canvas>
+          <div class="gauge-wrap__label">
+            <span class="gauge-wrap__valor" id="gauge-hidraulico-valor">--%</span>
+            <span class="gauge-wrap__status">Operante</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 — Sistemas Elétricos Tamanduateí -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Sistemas Elétricos · Tamanduateí</div>
+      <div class="rec-card__corpo">
+        <div class="bloco-status bloco-ok">Em Operação</div>
+        <div class="fase-lista">
+          <div class="fase-item"><span class="fase-item__label">R</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 82%"></span></span><span class="fase-item__valor">82%</span></div>
+          <div class="fase-item"><span class="fase-item__label">S</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 79%"></span></span><span class="fase-item__valor">79%</span></div>
+          <div class="fase-item"><span class="fase-item__label">T</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 85%"></span></span><span class="fase-item__valor">85%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 — Grupo Gerador Tamanduateí -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Grupo Gerador · Tamanduateí</div>
+      <div class="rec-card__corpo">
+        <div class="bloco-status bloco-neutro">Standby</div>
+        <div class="medidor-linear">
+          <div class="medidor-linear__topo"><span>Combustível</span><strong>92%</strong></div>
+          <div class="medidor-linear__trilho"><div class="medidor-linear__preenchido" style="width: 92%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4 — Sistemas Elétricos CCO Brás -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Sistemas Elétricos · CCO Brás</div>
+      <div class="rec-card__corpo">
+        <div class="bloco-status bloco-ok">Em Operação</div>
+        <div class="fase-lista">
+          <div class="fase-item"><span class="fase-item__label">R</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 88%"></span></span><span class="fase-item__valor">88%</span></div>
+          <div class="fase-item"><span class="fase-item__label">S</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 84%"></span></span><span class="fase-item__valor">84%</span></div>
+          <div class="fase-item"><span class="fase-item__label">T</span><span class="fase-item__trilho"><span class="fase-item__preenchido" style="width: 90%"></span></span><span class="fase-item__valor">90%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5 — Monitoramento CTC -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Monitoramento CTC</div>
+      <div class="rec-card__corpo">
+        <div class="bloco-status bloco-ok">Alimentação Normal</div>
+        <div class="medidor-linear">
+          <div class="medidor-linear__topo"><span>Tensão nominal</span><strong>127V</strong></div>
+          <div class="medidor-linear__trilho"><div class="medidor-linear__preenchido" style="width: 100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6 — Monitoramento AMV -->
+    <div class="rec-card">
+      <div class="rec-card__titulo">Monitoramento AMV</div>
+      <div class="rec-card__corpo">
+        <div class="bloco-status bloco-ok">Operante</div>
+        <div class="medidor-linear">
+          <div class="medidor-linear__topo"><span>Última leitura de corrente</span><strong>0.13A</strong></div>
+          <div class="medidor-linear__trilho"><div class="medidor-linear__preenchido" style="width: 13%"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PAINEL 3 — Disponibilidade (20s) ===== -->
+  <section class="vw-painel" id="painel-disp">
+    <div class="disp-esquerda">
+      <div class="disp-kpis">
+        <div class="disp-kpi">
+          <div class="disp-kpi__valor" id="disp-total">--</div>
+          <div class="disp-kpi__label">Total Monitorados</div>
+        </div>
+        <div class="disp-kpi">
+          <div class="disp-kpi__valor cor-ok" id="disp-online">--</div>
+          <div class="disp-kpi__label">Online</div>
+        </div>
+        <div class="disp-kpi">
+          <div class="disp-kpi__valor cor-parcial" id="disp-parcial">--</div>
+          <div class="disp-kpi__label">Maturidade Parcial</div>
+        </div>
+        <div class="disp-kpi">
+          <div class="disp-kpi__valor cor-offline" id="disp-offline">--</div>
+          <div class="disp-kpi__label">Offline / Crítico</div>
+        </div>
+      </div>
+
+      <div class="disp-barra-wrap">
+        <div class="disp-barra-wrap__label">Disponibilidade Geral</div>
+        <div class="disp-barra-wrap__linha">
+          <div class="disp-barra-wrap__trilho"><div class="disp-barra-wrap__preenchido" id="disp-barra-preenchido" style="width: 0%"></div></div>
+          <div class="disp-barra-wrap__valor" id="disp-barra-valor">--%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="disp-direita" id="disp-categorias"><!-- preenchido via JS a partir de ATIVOS --></div>
+  </section>
+
+  <!-- ===== MODO CRISE — layout de falha crítica ===== -->
+  <section class="vw-painel" id="painel-crise">
+    <div class="painel-titulo">Falha Crítica Detectada</div>
+    <div class="crise-grid" id="crise-cards"><!-- preenchido via JS a partir de ATIVOS_EM_FALHA --></div>
+  </section>
+
+</main>
+
+<!-- ===== JS do VideoWall — dados, carrossel, relógio, gauge, modo crise ===== -->
+<script>
+/* Ativos atualmente em falha crítica — array vazio em operação normal.
+   Declarada no escopo global (fora da IIFE) e nunca redeclarada com
+   let/const/var dentro dela, para que uma reatribuição completa feita
+   via console do browser (window.ATIVOS_EM_FALHA = [...]) seja
+   enxergada pelo setInterval de verificação (a cada 5s) — o código
+   interno sempre lê window.ATIVOS_EM_FALHA, nunca uma referência
+   local capturada no momento em que a IIFE foi criada. */
+window.ATIVOS_EM_FALHA = [];
+
+(function () {
+  'use strict';
+
+  /* ================================================================
+     Dados reais dos 8 ativos monitorados — fonte única para a lista
+     de status, os KPIs e a agregação por categoria.
+  ================================================================= */
+  var ATIVOS = [
+    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', categoria: 'Fibra',        local: 'Sala Técnica LUZ',   status: 'Online', maturidade: 'Parcial' },
+    { id: 2, nome: 'Sist. Acionamento de Bombas', categoria: 'Hidráulico',  local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
+    { id: 3, nome: 'Sistemas Elétricos',          categoria: 'Energia',     local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
+    { id: 4, nome: 'Grupo Gerador',                categoria: 'Energia',     local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
+    { id: 5, nome: 'Sistemas Elétricos',          categoria: 'Energia',     local: 'CCO Brás',           status: 'Online', maturidade: 'Concluído' },
+    { id: 6, nome: 'Monitoramento CTC',            categoria: 'Sinalização', local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
+    { id: 7, nome: 'Monitoramento AMV',            categoria: 'Sinalização', local: 'Brás — Linha 10',    status: 'Online', maturidade: 'Concluído' },
+    { id: 8, nome: 'STO L10',                      categoria: 'Fibra/Comun.', local: 'Linha 10 (trecho)', status: 'Online', maturidade: 'Parcial' }
+  ];
+
+  /* ================================================================
+     Painel 1 — lista de status e KPIs, gerados a partir de ATIVOS
+  ================================================================= */
+  function renderListaAtivos() {
+    var lista = document.getElementById('geo-lista');
+    var html = '';
+    ATIVOS.forEach(function (a) {
+      var parcial = a.maturidade === 'Parcial';
+      html += '<div class="asset-block' + (parcial ? ' is-parcial' : '') + '">' +
+        '<div class="asset-block__info">' +
+          '<div class="asset-block__nome">' + a.nome + '</div>' +
+          '<div class="asset-block__local">' + a.local + '</div>' +
+        '</div>' +
+        '<div class="asset-block__badge">' + a.status + '</div>' +
+      '</div>';
+    });
+    lista.innerHTML = html;
+
+    var online = ATIVOS.filter(function (a) { return a.status === 'Online'; }).length;
+    var parcial = ATIVOS.filter(function (a) { return a.maturidade === 'Parcial'; }).length;
+    var offline = ATIVOS.filter(function (a) { return a.status === 'Offline'; }).length;
+
+    document.getElementById('kpi-online').textContent = String(online).padStart(2, '0');
+    document.getElementById('kpi-parcial').textContent = String(parcial).padStart(2, '0');
+    document.getElementById('kpi-offline').textContent = String(offline).padStart(2, '0');
+
+    document.getElementById('disp-total').textContent = String(ATIVOS.length).padStart(2, '0');
+    document.getElementById('disp-online').textContent = String(online).padStart(2, '0');
+    document.getElementById('disp-parcial').textContent = String(parcial).padStart(2, '0');
+    document.getElementById('disp-offline').textContent = String(offline).padStart(2, '0');
+
+    var disponibilidade = Math.round((online / ATIVOS.length) * 100);
+    document.getElementById('disp-barra-preenchido').style.width = disponibilidade + '%';
+    document.getElementById('disp-barra-valor').textContent = disponibilidade + '%';
+  }
+
+  /* ================================================================
+     Painel 3 — blocos por categoria, altura proporcional à quantidade
+  ================================================================= */
+  function renderCategorias() {
+    var contagem = {};
+    var ordem = [];
+    ATIVOS.forEach(function (a) {
+      if (!contagem[a.categoria]) {
+        contagem[a.categoria] = 0;
+        ordem.push(a.categoria);
+      }
+      contagem[a.categoria]++;
+    });
+
+    var wrap = document.getElementById('disp-categorias');
+    var html = '';
+    ordem.forEach(function (cat) {
+      var qtd = contagem[cat];
+      var sufixo = qtd === 1 ? 'ativo' : 'ativos';
+      html += '<div class="cat-bloco" style="flex-grow: ' + qtd + '">' +
+        '<div class="cat-bloco__nome">' + cat + '</div>' +
+        '<div class="cat-bloco__meta"><strong>' + qtd + '</strong>' + sufixo + ' · Online</div>' +
+      '</div>';
+    });
+    wrap.innerHTML = html;
+  }
+
+  renderListaAtivos();
+  renderCategorias();
+
+  /* ================================================================
+     Relógio — atualizado a cada segundo, fonte mono
+  ================================================================= */
+  var clockTimeEl = document.getElementById('vw-clock-time');
+  var clockDateEl = document.getElementById('vw-clock-date');
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function atualizarRelogio() {
+    var agora = new Date();
+    clockTimeEl.textContent = pad2(agora.getHours()) + ':' + pad2(agora.getMinutes()) + ':' + pad2(agora.getSeconds());
+    clockDateEl.textContent = pad2(agora.getDate()) + '/' + pad2(agora.getMonth() + 1) + '/' + agora.getFullYear();
+  }
+
+  atualizarRelogio();
+  setInterval(atualizarRelogio, 1000);
+
+  /* ================================================================
+     Instrumento radial (canvas) — arco de progresso do Card 1
+  ================================================================= */
+  var HIDRAULICO_PERCENT = 78;
+
+  function corCss(nomeVar) {
+    return getComputedStyle(document.documentElement).getPropertyValue(nomeVar).trim();
+  }
+
+  function corPorPercentual(p) {
+    if (p > 95) return corCss('--crit-hi');
+    if (p >= 85) return corCss('--alert-hi');
+    return corCss('--ok-hi');
+  }
+
+  function desenharGauge(canvas, percent) {
+    var rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    var cx = rect.width / 2;
+    var cy = rect.height / 2;
+    var lineWidth = Math.max(10, Math.min(rect.width, rect.height) * 0.09);
+    var radius = Math.min(rect.width, rect.height) / 2 - lineWidth / 2 - 4;
+
+    ctx.lineCap = 'round';
+
+    /* Trilho de fundo — círculo completo */
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, -Math.PI / 2, Math.PI * 1.5);
+    ctx.strokeStyle = corCss('--border-hi');
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+
+    /* Arco de progresso — 360° = capacidade máxima */
+    var anguloFinal = -Math.PI / 2 + (percent / 100) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, -Math.PI / 2, anguloFinal);
+    ctx.strokeStyle = corPorPercentual(percent);
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+
+  var gaugeCanvas = document.getElementById('gauge-hidraulico');
+  document.getElementById('gauge-hidraulico-valor').textContent = HIDRAULICO_PERCENT + '%';
+
+  var gaugeResizeObserver = new ResizeObserver(function () {
+    desenharGauge(gaugeCanvas, HIDRAULICO_PERCENT);
+  });
+  gaugeResizeObserver.observe(gaugeCanvas);
+  desenharGauge(gaugeCanvas, HIDRAULICO_PERCENT);
+
+  /* ================================================================
+     Carrossel — avança automaticamente entre os 3 painéis, com fade
+     e barra de progresso sincronizados ao tempo real de cada painel.
+  ================================================================= */
+  var PAINEIS = [
+    { id: 'painel-geo', duracao: 30000 },
+    { id: 'painel-rec', duracao: 25000 },
+    { id: 'painel-disp', duracao: 20000 }
+  ];
+
+  var progressBarEl = document.getElementById('vw-progress-bar');
+  var dotEls = Array.prototype.slice.call(document.querySelectorAll('.vw-dot'));
+  var painelCriseEl = document.getElementById('painel-crise');
+
+  var indiceAtual = 0;
+  var inicioPainel = performance.now();
+  var emCrise = false;
+
+  function ativarPainel(indice) {
+    PAINEIS.forEach(function (p, i) {
+      var el = document.getElementById(p.id);
+      el.classList.toggle('is-active', i === indice);
+    });
+    dotEls.forEach(function (dot, i) {
+      dot.classList.toggle('is-active', i === indice);
+    });
+  }
+
+  function loopCarrossel(agora) {
+    if (!emCrise) {
+      var painel = PAINEIS[indiceAtual];
+      var decorrido = agora - inicioPainel;
+      var pct = Math.min(100, (decorrido / painel.duracao) * 100);
+      progressBarEl.style.width = pct + '%';
+
+      if (decorrido >= painel.duracao) {
+        indiceAtual = (indiceAtual + 1) % PAINEIS.length;
+        inicioPainel = agora;
+        ativarPainel(indiceAtual);
+      }
+    }
+    requestAnimationFrame(loopCarrossel);
+  }
+
+  ativarPainel(indiceAtual);
+  requestAnimationFrame(loopCarrossel);
+
+  /* ================================================================
+     Modo crise — verifica ATIVOS_EM_FALHA a cada 5s; quando populado,
+     interrompe o carrossel e assume o layout de falha crítica.
+  ================================================================= */
+  var cronometrosFalha = {};
+
+  function entrarModoCrise() {
+    emCrise = true;
+    PAINEIS.forEach(function (p) {
+      document.getElementById(p.id).classList.remove('is-active');
+    });
+    dotEls.forEach(function (dot) { dot.classList.remove('is-active'); });
+    progressBarEl.style.width = '0%';
+    painelCriseEl.classList.add('is-active');
+
+    window.ATIVOS_EM_FALHA.forEach(function (a) {
+      if (!cronometrosFalha[a.id]) {
+        cronometrosFalha[a.id] = Date.now();
+      }
+    });
+  }
+
+  function sairModoCrise() {
+    emCrise = false;
+    cronometrosFalha = {};
+    painelCriseEl.classList.remove('is-active');
+    indiceAtual = 0;
+    inicioPainel = performance.now();
+    ativarPainel(indiceAtual);
+  }
+
+  function renderizarCartoesCrise() {
+    var wrap = document.getElementById('crise-cards');
+    var html = '';
+    window.ATIVOS_EM_FALHA.forEach(function (a) {
+      var inicio = cronometrosFalha[a.id] || Date.now();
+      var decorrido = Date.now() - inicio;
+      var mm = pad2(Math.floor(decorrido / 60000));
+      var ss = pad2(Math.floor((decorrido % 60000) / 1000));
+      html += '<div class="crise-card">' +
+        '<div class="crise-card__nome">' + a.nome + '</div>' +
+        '<div class="crise-card__local">' + a.local + '</div>' +
+        '<div class="crise-card__timer">' + mm + ':' + ss + '</div>' +
+      '</div>';
+    });
+    wrap.innerHTML = html;
+  }
+
+  function verificarFalhas() {
+    var temFalha = window.ATIVOS_EM_FALHA.length > 0;
+    if (temFalha && !emCrise) {
+      entrarModoCrise();
+    } else if (!temFalha && emCrise) {
+      sairModoCrise();
+    }
+    if (emCrise) renderizarCartoesCrise();
+  }
+
+  verificarFalhas();
+  setInterval(verificarFalhas, 5000);
+  setInterval(function () { if (emCrise) renderizarCartoesCrise(); }, 1000);
+})();
+</script>
+</body>
+</html>
