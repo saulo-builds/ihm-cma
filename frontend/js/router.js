@@ -5,27 +5,27 @@ window.CMA = window.CMA || {};
 (function () {
   /* Mapa de rotas — caminho do arquivo é relativo à raiz de frontend/ */
   const ROUTES = {
-    '/': { file: 'pages/monitoramento/dashboard.html', module: 'Monitoramento', page: 'Dashboard' },
-    '/mapeamento': { file: 'pages/monitoramento/mapeamento.html', module: 'Monitoramento', page: 'Mapeamento' },
-    '/tabela': { file: 'pages/monitoramento/tabela.html', module: 'Monitoramento', page: 'Tabela' },
-    '/disponibilidade': { file: 'pages/monitoramento/disponibilidade.html', module: 'Monitoramento', page: 'Disponibilidade' },
-    '/localidade': { file: 'pages/monitoramento/localidade.html', module: 'Monitoramento', page: 'Localidade' },
-    '/alarmes': { file: 'pages/monitoramento/alarmes.html', module: 'Monitoramento', page: 'Alarmes' },
+    '/': { file: '/pages/monitoramento/dashboard.html', module: 'Monitoramento', page: 'Dashboard' },
+    '/mapeamento': { file: '/pages/monitoramento/mapeamento.html', module: 'Monitoramento', page: 'Mapeamento' },
+    '/tabela': { file: '/pages/monitoramento/tabela.html', module: 'Monitoramento', page: 'Tabela' },
+    '/disponibilidade': { file: '/pages/monitoramento/disponibilidade.html', module: 'Monitoramento', page: 'Disponibilidade' },
+    '/localidade': { file: '/pages/monitoramento/localidade.html', module: 'Monitoramento', page: 'Localidade' },
+    '/alarmes': { file: '/pages/monitoramento/alarmes.html', module: 'Monitoramento', page: 'Alarmes' },
 
-    '/cadastro/mda': { file: 'pages/cadastro/mda.html', module: 'Cadastro', page: 'MDA' },
-    '/cadastro/status': { file: 'pages/cadastro/status.html', module: 'Cadastro', page: 'Status' },
-    '/cadastro/tipo-equipamento': { file: 'pages/cadastro/tipo-equipamento.html', module: 'Cadastro', page: 'Tipo de Equipamento' },
-    '/cadastro/equipamento': { file: 'pages/cadastro/equipamento.html', module: 'Cadastro', page: 'Equipamento' },
-    '/cadastro/notificacao': { file: 'pages/cadastro/notificacao.html', module: 'Cadastro', page: 'Notificação' },
-    '/cadastro/usuarios': { file: 'pages/cadastro/usuarios.html', module: 'Cadastro', page: 'Usuários' },
+    '/cadastro/mda': { file: '/pages/cadastro/mda.html', module: 'Cadastro', page: 'MDA' },
+    '/cadastro/status': { file: '/pages/cadastro/status.html', module: 'Cadastro', page: 'Status' },
+    '/cadastro/tipo-equipamento': { file: '/pages/cadastro/tipo-equipamento.html', module: 'Cadastro', page: 'Tipo de Equipamento' },
+    '/cadastro/equipamento': { file: '/pages/cadastro/equipamento.html', module: 'Cadastro', page: 'Equipamento' },
+    '/cadastro/notificacao': { file: '/pages/cadastro/notificacao.html', module: 'Cadastro', page: 'Notificação' },
+    '/cadastro/usuarios': { file: '/pages/cadastro/usuarios.html', module: 'Cadastro', page: 'Usuários' },
 
-    '/relatorios/disponibilidade': { file: 'pages/relatorios/disponibilidade.html', module: 'Relatórios', page: 'Disponibilidade' },
-    '/relatorios/historico-alarmes': { file: 'pages/relatorios/historico-alarmes.html', module: 'Relatórios', page: 'Hist. Alarmes' },
-    '/relatorios/mtbf-mttr': { file: 'pages/relatorios/mtbf-mttr.html', module: 'Relatórios', page: 'MTBF/MTTR' },
-    '/relatorios/resumo-mensal': { file: 'pages/relatorios/resumo-mensal.html', module: 'Relatórios', page: 'Resumo Mensal' },
-    '/relatorios/indisponibilidade-linha': { file: 'pages/relatorios/indisponibilidade-linha.html', module: 'Relatórios', page: 'Indisp. por Linha' },
+    '/relatorios/disponibilidade': { file: '/pages/relatorios/disponibilidade.html', module: 'Relatórios', page: 'Disponibilidade' },
+    '/relatorios/historico-alarmes': { file: '/pages/relatorios/historico-alarmes.html', module: 'Relatórios', page: 'Hist. Alarmes' },
+    '/relatorios/mtbf-mttr': { file: '/pages/relatorios/mtbf-mttr.html', module: 'Relatórios', page: 'MTBF/MTTR' },
+    '/relatorios/resumo-mensal': { file: '/pages/relatorios/resumo-mensal.html', module: 'Relatórios', page: 'Resumo Mensal' },
+    '/relatorios/indisponibilidade-linha': { file: '/pages/relatorios/indisponibilidade-linha.html', module: 'Relatórios', page: 'Indisp. por Linha' },
 
-    '/videowall': { file: 'pages/videowall/index.html', module: 'VideoWall', page: 'VideoWall' },
+    '/videowall': { file: '/pages/videowall/index.html', module: 'VideoWall', page: 'VideoWall' },
   };
 
   const state = { currentPath: '/' };
