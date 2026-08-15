@@ -1,0 +1,322 @@
+================================================================================
+  ESTRUTURA DO BANCO DE DADOS — IHM CMA · CPTM Linha 10
+  Schema: ihm (dentro do banco telemetria_amv · PostgreSQL 15)
+  VM monitdev · 192.168.43.200
+================================================================================
+
+CONVENÇÕES
+──────────────────────────────────────────────────────────────────────────────
+  PK  = Primary Key (chave primária, auto-incremento SERIAL)
+  FK  = Foreign Key (referência a outra tabela)
+  NN  = NOT NULL (obrigatório)
+  UQ  = UNIQUE (valor único na tabela)
+  DEF = DEFAULT (valor padrão)
+  idx = índice recomendado para performance
+
+================================================================================
+  DOMÍNIO: CONFIGURAÇÃO DO SISTEMA
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.perfis                                                                 │
+│  Perfis de acesso dos usuários                                              │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(50) │  NN, UQ — ex: 'Administrador','Operador' │
+│  descricao       │  TEXT        │  opcional                                 │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.usuarios                                                               │
+│  Usuários do sistema com controle de acesso                                 │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(100)│  NN                                       │
+│  email           │  VARCHAR(150)│  NN, UQ                                   │
+│  senha_hash      │  VARCHAR(255)│  NN — bcrypt hash, nunca texto puro       │
+│  perfil_id       │  INTEGER     │  FK → ihm.perfis.id, NN                   │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  ultimo_acesso   │  TIMESTAMPTZ │  nullable — atualizado no login           │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: email (UQ), perfil_id                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.status_operacional                                                     │
+│  Estados operacionais possíveis para os ativos                              │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(50) │  NN, UQ — ex: 'Online','Alerta','Offline'│
+│  cor_hex         │  CHAR(7)     │  NN — ex: '#2FD4A0' (com #)              │
+│  ordem           │  SMALLINT    │  NN — ordem de exibição nas telas         │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.tipos_equipamento                                                      │
+│  Categorias dos equipamentos monitorados                                    │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(80) │  NN, UQ — ex: 'Fibra','Energia'          │
+│  descricao       │  TEXT        │  opcional                                 │
+│  cor_hex         │  CHAR(7)     │  NN — cor de identificação visual         │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.linhas                                                                 │
+│  Linhas ferroviárias monitoradas                                            │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  codigo          │  VARCHAR(10) │  NN, UQ — ex: 'L10'                      │
+│  nome            │  VARCHAR(80) │  NN — ex: 'Linha 10 — Turquesa'          │
+│  cor_hex         │  CHAR(7)     │  NN — cor oficial da linha                │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.localidades                                                            │
+│  Estações, salas técnicas e trechos onde os ativos estão instalados        │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(120)│  NN — ex: 'Est. Tamanduatei'             │
+│  tipo            │  VARCHAR(50) │  NN — ex: 'Estação','Sala Técnica','CCO' │
+│  linha_id        │  INTEGER     │  FK → ihm.linhas.id, NN                  │
+│  latitude        │  DECIMAL(9,6)│  nullable — para mapa futuro             │
+│  longitude       │  DECIMAL(9,6)│  nullable — para mapa futuro             │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: linha_id                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  DOMÍNIO: HARDWARE DE CAMPO
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.mdas                                                                   │
+│  Dispositivos físicos de coleta (Monitor de Ativos)                        │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(80) │  NN — ex: 'MDA-TAM-01'                   │
+│  mac_address     │  MACADDR     │  NN, UQ — endereço físico do dispositivo  │
+│  localidade_id   │  INTEGER     │  FK → ihm.localidades.id, nullable        │
+│  ultima_comun    │  TIMESTAMPTZ │  nullable — atualizado pelo integrador    │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+├──────────────────┴──────────────┴────────────────────────────────────────── ┤
+│  idx: mac_address (UQ), localidade_id                                       |
+|  NOTA: o MDA nao tem dispositivo_id -- esse ID pertence a cada             |
+|  sensor logico (equipamento) dentro do gateway.                            |
+|  Ver coluna dispositivo_id em ihm.equipamentos.                            |       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  DOMÍNIO: EQUIPAMENTOS (coração do sistema)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.equipamentos                                                           │
+│  Ativos monitorados — cada linha é um ativo do CMA                         │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  codigo          │  VARCHAR(30) │  NN, UQ — ex: 'AMV-BRS-01'                │
+│  nome            │  VARCHAR(150)│  NN — nome completo do ativo              │
+│  descricao       │  TEXT        │  nullable — o que ele monitora            │
+│  tipo_id         │  INTEGER     │  FK → ihm.tipos_equipamento.id, NN        │
+│  localidade_id   │  INTEGER     │  FK → ihm.localidades.id, NN              │
+│  mda_id          │  INTEGER     │  FK → ihm.mdas.id, nullable               │
+| dispositivo_id   | VARCHAR(50)  | nullable, UQ -- ID do sensor logico no MQTT|
+|                  |              | ex: 'AMV_39B', 'TAM-ELE-01'               |
+|                  |              | PONTE com public.dados_monitoramento      |
+│  status_id       │  INTEGER     │  FK → ihm.status_operacional.id, NN       │
+│  maturidade      │  VARCHAR(20) │  NN — 'Concluído','Parcial','Implantação' │
+│  horario_op      │  VARCHAR(20) │  nullable — ex: '24h','06-22h'            │
+│  responsavel     │  VARCHAR(100)│  nullable — ex: 'GOT/CMA'                 │ 
+│  valor_atual     │  VARCHAR(50) │  nullable — leitura atual do sensor       │
+│  ultima_comun    │  TIMESTAMPTZ │  nullable — atualizado pela API           │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+├──────────────────┴──────────────┴────────────────────────────────────────── ┤
+│idx: codigo (UQ), dispositivo_id (UQ), tipo_id, localidade_id, status_id, mda_id│
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  DOMÍNIO: EVENTOS E HISTÓRICO
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.historico_status                                                       │
+│  Registro de cada mudança de status de um equipamento                      │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  BIGSERIAL   │  PK — BIGSERIAL pois pode crescer muito   │
+│  equipamento_id  │  INTEGER     │  FK → ihm.equipamentos.id, NN             │
+│  status_ant_id   │  INTEGER     │  FK → ihm.status_operacional.id, nullable │
+│  status_novo_id  │  INTEGER     │  FK → ihm.status_operacional.id, NN       │
+│  usuario_id      │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
+│  observacao      │  TEXT        │  nullable — anotação do operador          │
+│  origem          │  VARCHAR(20) │  NN — 'manual','api','sistema'            │
+│  ocorrido_em     │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: equipamento_id + ocorrido_em DESC (composto — queries de histórico)  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.alarmes                                                                │
+│  Eventos de alarme ativos e histórico completo                              │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  BIGSERIAL   │  PK                                       │
+│  equipamento_id  │  INTEGER     │  FK → ihm.equipamentos.id, NN             │
+│  tipo            │  VARCHAR(50) │  NN — 'Falha Operacional','Maturidade     │
+│                  │              │       Parcial','Manutenção','Comunicação' │
+│  criticidade     │  VARCHAR(20) │  NN — 'Crítico','Alerta','Normal'         │
+│  titulo          │  VARCHAR(150)│  NN — resumo do alarme                    │
+│  descricao       │  TEXT        │  nullable — detalhes                      │
+│  iniciado_em     │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  resolvido_em    │  TIMESTAMPTZ │  nullable — NULL = alarme ainda ativo     │
+│  reconhecido_em  │  TIMESTAMPTZ │  nullable                                 │
+│  reconhecido_por │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
+│  resolvido_por   │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
+│  observacao      │  TEXT        │  nullable                                 │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: equipamento_id, iniciado_em DESC, resolvido_em (NULL = ativo)        │
+│  Query alarmes ativos: WHERE resolvido_em IS NULL                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  DOMÍNIO: NOTIFICAÇÕES
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.grupos_notificacao                                                     │
+│  Grupos que recebem alertas de determinados ativos                         │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  nome            │  VARCHAR(100)│  NN, UQ — ex: 'GOT-CMA Operação'         │
+│  ativo           │  BOOLEAN     │  NN, DEF true                             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.membros_notificacao                                                    │
+│  Usuários membros de grupos de notificação (N:N)                           │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  grupo_id        │  INTEGER     │  FK → ihm.grupos_notificacao.id, PK (comp)│
+│  usuario_id      │  INTEGER     │  FK → ihm.usuarios.id, PK (composta)      │
+│  adicionado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+└──────────────────┴──────────────┴──────────────────────────────────────────┘
+
+================================================================================
+  DIAGRAMA DE RELACIONAMENTOS
+================================================================================
+
+ihm.perfis ──────────────────────────────────────────────┐
+                                                          │ 1:N
+ihm.usuarios ──────────────────────────────────────────── perfil_id
+    │ 1:N (reconhecido_por / resolvido_por)
+    └──────────────────────────────┐
+                                   ↓
+ihm.linhas ──────── 1:N ──── ihm.localidades ─── 1:N ─── ihm.equipamentos
+                                   │                           │
+                              1:N  │                      FK ─┤─ tipo_id
+                                   ↓                     FK ─┤─ status_id
+                              ihm.mdas ──── 1:N ──── mda_id ─┘
+                                                         │
+                                              1:N        │
+                                              ↓          │
+                                   ihm.historico_status ─┘
+                                              │
+                                   ihm.alarmes ──── equipamento_id
+
+ihm.grupos_notificacao ─── N:N ─── ihm.membros_notificacao ─── N:N ─── ihm.usuarios
+
+================================================================================
+  TABELA RESUMO
+================================================================================
+
+  Schema: ihm
+  ┌────────────────────────┬──────────┬────────────────────────────────────┐
+  │  Tabela                │  Linhas  │  Papel                             │
+  │                        │  iniciais│                                    │
+  ├────────────────────────┼──────────┼────────────────────────────────────┤
+  │  perfis                │  2       │  Administrador, Operador CMA       │
+  │  usuarios              │  3       │  Saulo, Wellingto, Fernando        │
+  │  status_operacional    │  5       │  Online, Alerta, Crítico, ...      │
+  │  tipos_equipamento     │  5       │  Fibra, Energia, Sinalização, ...  │
+  │  linhas                │  1       │  L10 — Turquesa                    │
+  │  localidades           │  5       │  Tamanduatei, Brás, LUZ, ...      │
+  │  mdas                  │  3       │  MDA-TAM-01, MDA-BRS-01, ...      │
+  │  equipamentos          │  8       │  Os 8 ativos reais do CMA         │
+  │  historico_status      │  0       │  Cresce a cada mudança de status   │
+  │  alarmes               │  2       │  Os 2 alarmes de maturidade parcial│
+  │  grupos_notificacao    │  2       │  GOT-CMA Operação, Manutenção      │
+  │  membros_notificacao   │  5       │  Membros dos grupos                │
+  └────────────────────────┴──────────┴────────────────────────────────────┘
+
+  Total: 12 tabelas · Schema ihm · Banco telemetria_amv · PostgreSQL 15
+
+================================================================================
+  DADOS INICIAIS (seed) — executar uma vez após criar o schema
+================================================================================
+
+-- Perfis
+INSERT INTO ihm.perfis (nome, descricao) VALUES
+  ('Administrador', 'Acesso completo ao sistema incluindo cadastro e usuários'),
+  ('Operador CMA',  'Acesso a monitoramento, alarmes e relatórios');
+
+-- Status operacional
+INSERT INTO ihm.status_operacional (nome, cor_hex, ordem) VALUES
+  ('Online',   '#2FD4A0', 1),
+  ('Alerta',   '#F0A830', 2),
+  ('Crítico',  '#F05050', 3),
+  ('Offline',  '#404468', 4),
+  ('Parcial',  '#BFA0E8', 5);
+
+-- Tipos de equipamento
+INSERT INTO ihm.tipos_equipamento (nome, descricao, cor_hex) VALUES
+  ('Fibra',        'Sistemas de fibra óptica e comunicação',         '#5AAEFF'),
+  ('Hidráulico',   'Bombas e reservatórios',                         '#40C0D0'),
+  ('Energia',      'Sistemas elétricos e geradores',                 '#D4A030'),
+  ('Sinalização',  'Equipamentos de sinalização ferroviária',        '#C070E0'),
+  ('Fibra/Comun.', 'Fibra e comunicação entre estações',             '#8090F0');
+
+-- Linha
+INSERT INTO ihm.linhas (codigo, nome, cor_hex) VALUES
+  ('L10', 'Linha 10 — Turquesa', '#00A89D');
+
+================================================================================
+  CPTM · GOT · CMA — Estrutura do Banco de Dados IHM · Agosto/2026
+================================================================================
