@@ -1,0 +1,321 @@
+<!-- ==================================================================
+     Resumo Mensal — Relatórios (CMA / Linha 10)
+     Página injetada pelo router dentro de <main id="content">.
+     Sem <html>/<head>/<body>: tokens e componentes já vêm do shell.
+==================================================================== -->
+
+<style>
+  /* ===== Cabeçalho de página ===== */
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rel);
+    margin-bottom: 4px;
+  }
+
+  .page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  .page-header__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-md);
+  }
+
+  .page-section {
+    margin-bottom: 16px;
+  }
+
+  /* ===== Bloco 1 — Filtros ===== */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===== Bloco 2 — Relatório (cards lado a lado) ===== */
+  .report-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .kpi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .kpi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .kpi-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .kpi-row__label {
+    color: var(--text-md);
+  }
+
+  .kpi-row__value {
+    color: var(--text-hi);
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .highlight-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .highlight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--text-md);
+    line-height: 1.5;
+  }
+
+  .highlight-item__icon {
+    flex-shrink: 0;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 1100px) {
+    .filters-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .report-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .filters-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ===== Impressão — relatório limpo, sem shell ===== */
+  @media print {
+    .app-header,
+    .app-sidebar,
+    .no-print {
+      display: none !important;
+    }
+    #content {
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+    body,
+    #content,
+    .card {
+      background: #fff !important;
+    }
+    * {
+      color: #000 !important;
+      box-shadow: none !important;
+    }
+    .card {
+      border: 1px solid #999 !important;
+    }
+    .report-grid {
+      grid-template-columns: 1fr 1fr 1fr !important;
+    }
+  }
+</style>
+
+<!-- ===== Cabeçalho de página ===== -->
+<div class="page-header">
+  <div class="page-header__eyebrow">Relatórios</div>
+  <h1 class="page-header__title">Resumo Mensal</h1>
+  <p class="page-header__desc">Visão consolidada do mês para gestão e prestação de contas</p>
+</div>
+
+<!-- ===== Bloco 1 — Filtros ===== -->
+<div class="page-section card no-print">
+  <div class="card-header">
+    <div class="card-title">Período do relatório</div>
+  </div>
+  <div class="card-body">
+    <div class="filters-grid">
+      <div>
+        <label class="form-label" for="flt-mes">Mês</label>
+        <select class="select" id="flt-mes">
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8" selected>Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="flt-ano">Ano</label>
+        <select class="select" id="flt-ano">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="btn-gerar">Gerar Relatório</button>
+      <button type="button" class="btn btn-ghost" id="btn-exportar-pdf">Exportar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bloco 2 — Relatório ===== -->
+<div class="page-section" id="report-wrap">
+  <div class="report-grid">
+    <!-- Card 1 — Resumo executivo -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Resumo executivo</div>
+        <div class="card-subtitle" id="periodo-label">Agosto/2026</div>
+      </div>
+      <div class="card-body">
+        <div class="kpi-list">
+          <div class="kpi-row">
+            <span class="kpi-row__label">Período</span>
+            <span class="kpi-row__value" id="kpi-periodo">Agosto/2026</span>
+          </div>
+          <div class="kpi-row">
+            <span class="kpi-row__label">Total de ativos monitorados</span>
+            <span class="kpi-row__value">8</span>
+          </div>
+          <div class="kpi-row">
+            <span class="kpi-row__label">Ativos online durante todo o mês</span>
+            <span class="kpi-row__value">8 (100%)</span>
+          </div>
+          <div class="kpi-row">
+            <span class="kpi-row__label">Eventos de falha operacional</span>
+            <span class="kpi-row__value">0</span>
+          </div>
+          <div class="kpi-row">
+            <span class="kpi-row__label">Disponibilidade média</span>
+            <span class="kpi-row__value">100%</span>
+          </div>
+          <div class="kpi-row">
+            <span class="kpi-row__label">Sistemas em implantação</span>
+            <span class="kpi-row__value">2 (STO L10 e Fibra Ebilock)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 — Disponibilidade por categoria -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Disponibilidade por categoria</div>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Ativos</th>
+                <th>Disp. %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="cat cat-fibra">Fibra</span></td><td class="td-mono">1</td><td class="td-mono">100%</td></tr>
+              <tr><td><span class="cat cat-hidraulico">Hidráulico</span></td><td class="td-mono">1</td><td class="td-mono">100%</td></tr>
+              <tr><td><span class="cat cat-energia">Energia</span></td><td class="td-mono">3</td><td class="td-mono">100%</td></tr>
+              <tr><td><span class="cat cat-sinalizacao">Sinalização</span></td><td class="td-mono">2</td><td class="td-mono">100%</td></tr>
+              <tr><td><span class="cat cat-fibra-com">Fibra/Comun.</span></td><td class="td-mono">1</td><td class="td-mono">100%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 — Destaques do mês -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Destaques do mês</div>
+      </div>
+      <div class="card-body">
+        <div class="highlight-list">
+          <div class="highlight-item"><span class="highlight-item__icon">✅</span><span>Nenhuma falha operacional registrada</span></div>
+          <div class="highlight-item"><span class="highlight-item__icon">✅</span><span>Todos os ativos operaram dentro do horário previsto</span></div>
+          <div class="highlight-item"><span class="highlight-item__icon">⚙️</span><span>STO L10 — implantação em andamento</span></div>
+          <div class="highlight-item"><span class="highlight-item__icon">⚙️</span><span>Mon. Fibra Ebilock Luz L10 — em fase de testes</span></div>
+          <div class="highlight-item"><span class="highlight-item__icon">📋</span><span>Recomendação: concluir implantação dos sistemas parciais</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JS específico desta página ===== -->
+<script>
+(function () {
+  'use strict';
+
+  var MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  var mesSel = document.getElementById('flt-mes');
+  var anoSel = document.getElementById('flt-ano');
+  var periodoLabel = document.getElementById('periodo-label');
+  var kpiPeriodo = document.getElementById('kpi-periodo');
+
+  /* ===== Bloco 1 — gerar relatório para o mês/ano selecionado ===== */
+  function gerarRelatorio() {
+    var mes = MESES[parseInt(mesSel.value, 10)];
+    var ano = anoSel.value;
+    var texto = mes + '/' + ano;
+    periodoLabel.textContent = texto;
+    kpiPeriodo.textContent = texto;
+  }
+
+  function exportPDF() {
+    window.print();
+  }
+
+  document.getElementById('btn-gerar').addEventListener('click', gerarRelatorio);
+  document.getElementById('btn-exportar-pdf').addEventListener('click', exportPDF);
+
+  gerarRelatorio();
+})();
+</script>
