@@ -4,20 +4,19 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from config import settings
+import bcrypt
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 
 def hash_senha(senha: str) -> str:
-    return pwd_context.hash(senha)
+    return bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def verificar_senha(senha: str, senha_hash: str) -> bool:
-    return pwd_context.verify(senha, senha_hash)
+    return bcrypt.checkpw(senha.encode('utf-8'), senha_hash.encode('utf-8'))
 
 
 def criar_token(dados: dict) -> str:
@@ -40,9 +39,9 @@ def verificar_token(token: str) -> dict:
 
 
 def get_usuario_atual(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+        credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    """Dependency para proteger endpoints — retorna o payload do token (sub, nome, perfil)."""
+    """Dependency para proteger endpoints - retorna o payload do token (sub, nome, perfil)."""
     payload = verificar_token(credentials.credentials)
     if payload.get("sub") is None:
         raise HTTPException(

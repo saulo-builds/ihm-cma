@@ -53,7 +53,7 @@ def main() -> None:
     conn = psycopg2.connect(settings.DATABASE_URL)
 
     try:
-        executar_schema(conn)
+        # executar_schema(conn)
         definir_senhas_iniciais(conn)
         print("\nInicializacao concluida. Senha inicial de todos os usuarios: CMA@2026")
         print("Os usuarios devem trocar a senha no primeiro acesso.")

@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+echo "pacotes_extra/" >> .gitignore
+echo "pacotes_faltantes/" >> .gitignore
+echo "pacotes_vm/" >> .gitignore
