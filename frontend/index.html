@@ -358,6 +358,13 @@
     gap: 8px;
     padding-left: 10px;
     border-left: 1px solid var(--border);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.15s ease;
+  }
+
+  .app-header__user:hover {
+    background: var(--surface-2);
   }
 
   .app-header__avatar {
@@ -642,11 +649,11 @@
           <polyline points="18 17 13 12 18 7"></polyline>
         </svg>
       </button>
-      <div class="app-header__user">
-        <div class="app-header__avatar">SM</div>
+      <div class="app-header__user" id="header-user" title="Clique para sair">
+        <div class="app-header__avatar" id="header-user-avatar">--</div>
         <div class="app-header__user-text">
-          <span class="app-header__user-name">Saulo Lima</span>
-          <span class="app-header__user-role">Administrador</span>
+          <span class="app-header__user-name" id="header-user-name">--</span>
+          <span class="app-header__user-role" id="header-user-role">--</span>
         </div>
       </div>
     </div>
@@ -698,13 +705,19 @@
   </aside>
 </template>
 
-<!-- ===== Scripts — módulos do shell, inicializados após a montagem dos fragmentos ===== -->
+<!-- ===== Scripts — api.js primeiro (sessão/autenticação), depois os módulos do shell ===== -->
+<script src="js/api.js"></script>
 <script src="js/clock.js"></script>
 <script src="js/notifications.js"></script>
 <script src="js/router.js"></script>
 <script>
-  /* Bootstrap do shell — inclui header/sidebar (com fallback offline) e inicializa os módulos */
+  /* Bootstrap do shell — protege a rota, inclui header/sidebar (com fallback offline) e inicializa os módulos */
   (function () {
+    // Proteção de rota — sem token válido na sessão, não há o que renderizar aqui
+    if (!window.CMA.api.getToken()) {
+      window.location.href = '/login.html';
+    }
+
     async function includeFragment(url, targetId, fallbackTemplateId) {
       const target = document.getElementById(targetId);
       if (!target) return;
@@ -716,6 +729,35 @@
         console.warn(`[shell] fetch de "${url}" indisponível (comum em file://) — usando fragmento embutido.`, err);
         const tpl = document.getElementById(fallbackTemplateId);
         if (tpl) target.innerHTML = tpl.innerHTML;
+      }
+    }
+
+    function iniciais(nome) {
+      const partes = (nome || '').trim().split(/\s+/).filter(Boolean);
+      if (partes.length === 0) return '--';
+      if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+      return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    }
+
+    function preencherUsuarioHeader() {
+      const usuario = window.CMA.api.getUsuario();
+      const avatarEl = document.getElementById('header-user-avatar');
+      const nomeEl = document.getElementById('header-user-name');
+      const perfilEl = document.getElementById('header-user-role');
+      const userBtn = document.getElementById('header-user');
+
+      if (usuario) {
+        if (avatarEl) avatarEl.textContent = iniciais(usuario.nome);
+        if (nomeEl) nomeEl.textContent = usuario.nome || '--';
+        if (perfilEl) perfilEl.textContent = usuario.perfil || '--';
+      }
+
+      if (userBtn) {
+        userBtn.addEventListener('click', () => {
+          if (window.confirm('Deseja encerrar a sessão?')) {
+            window.CMA.api.logout();
+          }
+        });
       }
     }
 
@@ -754,12 +796,15 @@
     }
 
     async function boot() {
+      if (!window.CMA.api.getToken()) return;
+
       await Promise.all([
         includeFragment('shell/header.html', 'header-slot', 'tpl-header'),
         includeFragment('shell/sidebar.html', 'sidebar-slot', 'tpl-sidebar'),
       ]);
       window.CMA.initClock();
       window.CMA.initNotifications();
+      preencherUsuarioHeader();
       initShellControls();
       window.CMA.initRouter();
     }

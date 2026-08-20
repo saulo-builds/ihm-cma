@@ -38,7 +38,7 @@
   /* ===== Bloco 1 — Card de filtros ===== */
   .filters-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
 
@@ -80,15 +80,6 @@
     color: var(--text-md);
   }
 
-  tr.flash {
-    animation: flash-row 0.6s ease;
-  }
-
-  @keyframes flash-row {
-    0% { background: color-mix(in srgb, var(--mon) 30%, transparent); }
-    100% { background: transparent; }
-  }
-
   /* ===== Amostra de cor (célula da tabela + detalhe) ===== */
   .color-chip {
     display: inline-flex;
@@ -105,60 +96,6 @@
     border-radius: 50%;
     border: 1px solid var(--border-hi);
     flex-shrink: 0;
-  }
-
-  /* ===== Toggle Ativo/Inativo ===== */
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-track {
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--border-hi);
-    border-radius: 999px;
-    position: relative;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--text-md);
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: color-mix(in srgb, var(--ok) 30%, transparent);
-    border-color: var(--ok);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    transform: translateX(18px);
-    background: var(--ok-hi);
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: var(--text-hi);
   }
 
   /* ===== Campo de cor (color picker) ===== */
@@ -348,8 +285,43 @@
     color: var(--text-md);
   }
 
+  /* ===== Estados de carregamento e erro ===== */
+  .page-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .page-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .page-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: page-spin 0.8s linear infinite;
+  }
+
+  @keyframes page-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
   /* ===== Responsivo ===== */
-  @media (max-width: 1100px) {
+  @media (max-width: 900px) {
     .filters-grid {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -363,76 +335,85 @@
   }
 </style>
 
-<!-- ===== Cabeçalho de página ===== -->
-<div class="page-header">
-  <div class="page-header__eyebrow">Cadastro</div>
-  <h1 class="page-header__title">Tipo de Equipamento</h1>
-  <p class="page-header__desc">Categorias dos equipamentos monitorados</p>
+<!-- ===== Estado de carregamento ===== -->
+<div class="page-state" id="page-loading">
+  <div class="page-spinner" aria-hidden="true"></div>
+  <span>Carregando tipos de equipamento...</span>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-id">ID</label>
-        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-descricao">Descrição</label>
-        <input type="text" class="input" id="flt-descricao" placeholder="Buscar por descrição..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-status">Status</label>
-        <select class="select" id="flt-status">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="page-state" id="page-error-state" hidden>
+  <span class="page-state__title">Não foi possível carregar os tipos de equipamento</span>
+  <span id="page-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="page-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">5 registros encontrados</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="page-content" hidden>
+
+  <!-- ===== Cabeçalho de página ===== -->
+  <div class="page-header">
+    <div class="page-header__eyebrow">Cadastro</div>
+    <h1 class="page-header__title">Tipo de Equipamento</h1>
+    <p class="page-header__desc">Categorias dos equipamentos monitorados</p>
   </div>
 
-  <div class="table-wrap">
-    <table class="table" id="tipo-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Descrição</th>
-          <th>Cor</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tipo-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum tipo de equipamento encontrado para os filtros aplicados.</div>
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-id">ID</label>
+          <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-descricao">Descrição</label>
+          <input type="text" class="input" id="flt-descricao" placeholder="Buscar por descrição..." />
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">0 registros encontrados</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="tipo-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Cor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tipo-tbody">
+          <!-- Linhas renderizadas via JS a partir da resposta da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum tipo de equipamento encontrado para os filtros aplicados.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== Modal Incluir / Alterar ===== -->
@@ -458,14 +439,6 @@
           <input type="text" class="input" id="form-cor-hex" value="#1A6EC2" />
         </div>
       </div>
-      <div class="form-field">
-        <label class="form-label">Ativo</label>
-        <label class="toggle">
-          <input type="checkbox" id="form-ativo" checked />
-          <span class="toggle-track"></span>
-          <span class="toggle-label" id="form-ativo-label">Ativo</span>
-        </label>
-      </div>
     </div>
   </div>
   <div class="modal-footer">
@@ -487,16 +460,12 @@
         <div class="detail-field__value" id="det-id">—</div>
       </div>
       <div>
-        <div class="detail-field__label">Ativo</div>
-        <div class="detail-field__value" id="det-ativo">—</div>
-      </div>
-      <div>
-        <div class="detail-field__label">Nome</div>
-        <div class="detail-field__value" id="det-nome">—</div>
-      </div>
-      <div>
         <div class="detail-field__label">Cor</div>
         <div class="detail-field__value" id="det-cor">—</div>
+      </div>
+      <div class="detail-field full">
+        <div class="detail-field__label">Nome</div>
+        <div class="detail-field__value" id="det-nome">—</div>
       </div>
       <div class="detail-field full">
         <div class="detail-field__label">Descrição</div>
@@ -533,19 +502,51 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos tipos de equipamento ===== */
-  var TIPOS = [
-    { id: 1, nome: 'Fibra', descricao: 'Sistemas de fibra óptica', cor: '#1A6EC2', ativo: true },
-    { id: 2, nome: 'Hidráulico', descricao: 'Bombas e reservatórios', cor: '#1D9E75', ativo: true },
-    { id: 3, nome: 'Energia', descricao: 'Sistemas elétricos e geradores', cor: '#D4891A', ativo: true },
-    { id: 4, nome: 'Sinalização', descricao: 'Equipamentos de sinalização ferroviária', cor: '#C0392B', ativo: true },
-    { id: 5, nome: 'Fibra/Comun.', descricao: 'Fibra e comunicação entre estações', cor: '#7B5EA7', ativo: true }
-  ];
+  /* ===== Utilitários ===== */
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var nextId = TIPOS.length + 1;
-  var state = { filtered: TIPOS.slice() };
+  function colorChip(cor) {
+    var c = cor || '#808080';
+    return '<span class="color-chip"><span class="color-chip__dot" style="background:' + escapeHtml(c) + '"></span>' + escapeHtml(c.toUpperCase()) + '</span>';
+  }
+
+  /* ===== Estado geral (dados vêm da API) ===== */
+  var TIPOS = [];
+  var state = { filtered: [] };
   var editingId = null;
   var deletingId = null;
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('page-loading');
+  var elErrorState = document.getElementById('page-error-state');
+  var elErrorMessage = document.getElementById('page-error-message');
+  var elContent = document.getElementById('page-content');
+  var elRetry = document.getElementById('page-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   var tbody = document.getElementById('tipo-tbody');
   var emptyEl = document.getElementById('table-empty');
@@ -558,22 +559,16 @@
     return null;
   }
 
-  function colorChip(cor) {
-    return '<span class="color-chip"><span class="color-chip__dot" style="background:' + cor + '"></span>' + cor.toUpperCase() + '</span>';
-  }
-
   function render() {
     tbody.innerHTML = state.filtered.map(function (t) {
-      return '<tr id="row-' + t.id + '">' +
+      return '<tr>' +
         '<td class="td-mono">' + t.id + '</td>' +
-        '<td class="hi">' + t.nome + '</td>' +
-        '<td class="td-desc">' + t.descricao + '</td>' +
-        '<td>' + colorChip(t.cor) + '</td>' +
-        '<td>' + (t.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td class="hi">' + escapeHtml(t.nome) + '</td>' +
+        '<td class="td-desc">' + escapeHtml(t.descricao || '--') + '</td>' +
+        '<td>' + colorChip(t.cor_hex) + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + t.id + '">Detalhar</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + t.id + '">Alterar</button>' +
-          '<button type="button" class="btn btn-ghost btn-sm" data-action="status" data-id="' + t.id + '">Status</button>' +
           '<button type="button" class="btn btn-danger btn-sm" data-action="excluir" data-id="' + t.id + '">Excluir</button>' +
         '</div></td>' +
         '</tr>';
@@ -584,19 +579,16 @@
     countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
   }
 
-  /* ===== Filtros ===== */
+  /* ===== Filtros (client-side — a API não expõe parâmetros de busca para tipos) ===== */
   function applyFilters() {
     var id = document.getElementById('flt-id').value.trim();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
     var descricao = document.getElementById('flt-descricao').value.trim().toLowerCase();
-    var status = document.getElementById('flt-status').value;
 
     state.filtered = TIPOS.filter(function (t) {
       if (id && String(t.id) !== id) return false;
-      if (nome && t.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (descricao && t.descricao.toLowerCase().indexOf(descricao) === -1) return false;
-      if (status === 'Ativo' && !t.ativo) return false;
-      if (status === 'Inativo' && t.ativo) return false;
+      if (nome && (t.nome || '').toLowerCase().indexOf(nome) === -1) return false;
+      if (descricao && (t.descricao || '').toLowerCase().indexOf(descricao) === -1) return false;
       return true;
     });
     render();
@@ -606,7 +598,6 @@
     document.getElementById('flt-id').value = '';
     document.getElementById('flt-nome').value = '';
     document.getElementById('flt-descricao').value = '';
-    document.getElementById('flt-status').value = '';
     state.filtered = TIPOS.slice();
     render();
   }
@@ -616,14 +607,9 @@
 
   /* ===== Modal Incluir/Alterar ===== */
   var modalForm = document.getElementById('modal-form');
-  var formAtivo = document.getElementById('form-ativo');
-  var formAtivoLabel = document.getElementById('form-ativo-label');
   var formCor = document.getElementById('form-cor');
   var formCorHex = document.getElementById('form-cor-hex');
-
-  formAtivo.addEventListener('change', function () {
-    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
-  });
+  var btnSalvar = document.getElementById('btn-salvar-form');
 
   formCor.addEventListener('input', function () {
     formCorHex.value = formCor.value.toUpperCase();
@@ -641,8 +627,6 @@
     document.getElementById('form-descricao').value = '';
     formCor.value = '#1A6EC2';
     formCorHex.value = '#1A6EC2';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
     modalForm.showModal();
   }
 
@@ -651,39 +635,48 @@
     if (!t) return;
     editingId = id;
     document.getElementById('modal-form-title').textContent = 'Alterar Tipo de Equipamento';
-    document.getElementById('form-nome').value = t.nome;
-    document.getElementById('form-descricao').value = t.descricao;
-    formCor.value = t.cor;
-    formCorHex.value = t.cor.toUpperCase();
-    formAtivo.checked = t.ativo;
-    formAtivoLabel.textContent = t.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-nome').value = t.nome || '';
+    document.getElementById('form-descricao').value = t.descricao || '';
+    var cor = t.cor_hex || '#1A6EC2';
+    formCor.value = cor;
+    formCorHex.value = cor.toUpperCase();
     modalForm.showModal();
   }
 
   document.getElementById('btn-incluir').addEventListener('click', openIncluir);
 
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvar.addEventListener('click', function () {
     var nome = document.getElementById('form-nome').value.trim();
     var descricao = document.getElementById('form-descricao').value.trim();
+    var corHex = (formCorHex.value.trim() || formCor.value).toUpperCase();
+
     if (!nome) {
       alert('Preencha o Nome antes de salvar.');
       return;
     }
-    var cor = formCorHex.value.trim() || formCor.value;
-    var ativo = formAtivo.checked;
-
-    if (editingId) {
-      var t = findById(editingId);
-      t.nome = nome;
-      t.descricao = descricao;
-      t.cor = cor;
-      t.ativo = ativo;
-    } else {
-      TIPOS.push({ id: nextId++, nome: nome, descricao: descricao, cor: cor, ativo: ativo });
+    if (!/^#[0-9A-Fa-f]{6}$/.test(corHex)) {
+      alert('Informe uma cor válida no formato #RRGGBB.');
+      return;
     }
-    modalForm.close();
-    state.filtered = TIPOS.slice();
-    render();
+
+    var dados = { nome: nome, cor_hex: corHex };
+    if (descricao) dados.descricao = descricao;
+
+    var promise = editingId
+      ? window.CMA.api.atualizarTipoEquipamento(editingId, dados)
+      : window.CMA.api.criarTipoEquipamento(dados);
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+    promise.then(function () {
+      modalForm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao salvar tipo de equipamento: ' + err.message);
+    }).then(function () {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = 'Salvar';
+    });
   });
 
   /* ===== Modal Detalhar ===== */
@@ -693,25 +686,15 @@
     var t = findById(id);
     if (!t) return;
     document.getElementById('det-id').textContent = t.id;
-    document.getElementById('det-ativo').textContent = t.ativo ? 'Sim' : 'Não';
-    document.getElementById('det-nome').textContent = t.nome;
-    document.getElementById('det-cor').innerHTML = colorChip(t.cor);
-    document.getElementById('det-descricao').textContent = t.descricao;
+    document.getElementById('det-nome').textContent = t.nome || '--';
+    document.getElementById('det-cor').innerHTML = colorChip(t.cor_hex);
+    document.getElementById('det-descricao').textContent = t.descricao || '--';
     modalDetail.showModal();
-  }
-
-  /* ===== Ação rápida: alternar Ativo/Inativo ===== */
-  function toggleStatus(id) {
-    var t = findById(id);
-    if (!t) return;
-    t.ativo = !t.ativo;
-    render();
-    var row = document.getElementById('row-' + id);
-    if (row) row.classList.add('flash');
   }
 
   /* ===== Modal de confirmação de exclusão ===== */
   var modalConfirm = document.getElementById('modal-confirm');
+  var btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
 
   function openExcluir(id) {
     var t = findById(id);
@@ -721,14 +704,19 @@
     modalConfirm.showModal();
   }
 
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+  btnConfirmarExclusao.addEventListener('click', function () {
     if (deletingId == null) return;
-    var idx = TIPOS.findIndex(function (t) { return t.id === deletingId; });
-    if (idx !== -1) TIPOS.splice(idx, 1);
-    deletingId = null;
-    modalConfirm.close();
-    state.filtered = TIPOS.slice();
-    render();
+    var id = deletingId;
+    btnConfirmarExclusao.disabled = true;
+    window.CMA.api.excluirTipoEquipamento(id).then(function () {
+      deletingId = null;
+      modalConfirm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao excluir tipo de equipamento: ' + err.message);
+    }).then(function () {
+      btnConfirmarExclusao.disabled = false;
+    });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -739,7 +727,6 @@
     var action = btn.getAttribute('data-action');
     if (action === 'detalhar') openDetalhar(id);
     else if (action === 'alterar') openAlterar(id);
-    else if (action === 'status') toggleStatus(id);
     else if (action === 'excluir') openExcluir(id);
   });
 
@@ -751,6 +738,19 @@
     });
   });
 
-  render();
+  /* ===== Carregamento inicial via API ===== */
+  function carregar() {
+    mostrarLoading();
+    return window.CMA.api.getTiposEquipamento().then(function (dados) {
+      TIPOS = dados || [];
+      state.filtered = TIPOS.slice();
+      render();
+      mostrarConteudo();
+    }).catch(function (err) {
+      mostrarErro(err.message);
+    });
+  }
+
+  carregar();
 })();
 </script>

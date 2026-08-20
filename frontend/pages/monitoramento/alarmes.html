@@ -217,6 +217,41 @@
       flex-wrap: wrap;
     }
   }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .alm-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .alm-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .alm-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: alm-spin 0.8s linear infinite;
+  }
+
+  @keyframes alm-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -226,119 +261,147 @@
   <p class="page-header__desc">Alarmes ativos e histórico de eventos</p>
 </div>
 
-<!-- ===== Bloco 1 — Abas ===== -->
-<div class="tabs">
-  <button type="button" class="tab-btn active" data-tab="ativos">Ativos (2)</button>
-  <button type="button" class="tab-btn" data-tab="historico">Histórico</button>
+<!-- ===== Estado de carregamento ===== -->
+<div class="alm-state" id="alm-loading">
+  <div class="alm-spinner" aria-hidden="true"></div>
+  <span>Carregando alarmes...</span>
 </div>
 
-<!-- ===== Aba Ativos ===== -->
-<div class="tab-panel active" id="tab-ativos">
-
-  <!-- Aviso de nenhuma falha operacional -->
-  <div class="alarm-banner-ok">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
-    </svg>
-    <span>Nenhuma falha operacional ativa — todos os ativos estão online</span>
-  </div>
-
-  <!-- Cards de alarme — maturidade parcial (avisos, não falhas) -->
-  <div class="alarm-grid">
-    <div class="alarm-card" id="alarm-card-1">
-      <div class="alarm-card__top">
-        <div>
-          <div class="alarm-card__asset">STO L10</div>
-          <div class="alarm-card__local">Linha 10</div>
-        </div>
-        <span class="badge-maturidade maturidade-parcial">Maturidade Parcial</span>
-      </div>
-      <div class="alarm-card__body">
-        <p class="alarm-card__desc">Sistema parcialmente implantado — monitoramento ativo apenas nas estações concluídas.</p>
-        <p class="alarm-card__since">Desde: <strong>em implantação</strong></p>
-      </div>
-      <div class="alarm-card__actions">
-        <button type="button" class="btn btn-ghost btn-sm btn-reconhecer" data-ack="alarm-card-1">Reconhecer</button>
-        <span class="alarm-card__ack-tag">✓ Reconhecido</span>
-        <button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>
-      </div>
-    </div>
-
-    <div class="alarm-card" id="alarm-card-2">
-      <div class="alarm-card__top">
-        <div>
-          <div class="alarm-card__asset">Mon. Fibra Ebilock Luz L10</div>
-          <div class="alarm-card__local">Sala Técnica LUZ</div>
-        </div>
-        <span class="badge-maturidade maturidade-parcial">Maturidade Parcial</span>
-      </div>
-      <div class="alarm-card__body">
-        <p class="alarm-card__desc">Sistema em fase de testes — dados podem ser inconsistentes.</p>
-        <p class="alarm-card__since">Desde: <strong>em teste</strong></p>
-      </div>
-      <div class="alarm-card__actions">
-        <button type="button" class="btn btn-ghost btn-sm btn-reconhecer" data-ack="alarm-card-2">Reconhecer</button>
-        <span class="alarm-card__ack-tag">✓ Reconhecido</span>
-        <button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>
-      </div>
-    </div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="alm-state" id="alm-error-state" hidden>
+  <span class="alm-state__title">Não foi possível carregar os alarmes</span>
+  <span id="alm-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="alm-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Aba Histórico ===== -->
-<div class="tab-panel" id="tab-historico">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Histórico de eventos</div>
-        <div class="card-subtitle">Alarmes e ocorrências resolvidos</div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div class="hist-filters">
-        <div class="filter-field">
-          <label class="form-label" for="hist-data-ini">Data Inicial</label>
-          <input type="date" class="input" id="hist-data-ini" />
-        </div>
-        <div class="filter-field">
-          <label class="form-label" for="hist-data-fim">Data Final</label>
-          <input type="date" class="input" id="hist-data-fim" />
-        </div>
-        <button type="button" class="btn btn-primary" id="hist-filtrar">Filtrar</button>
-      </div>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="alm-content" hidden>
 
-      <div class="table-wrap">
-        <table class="table" id="hist-table">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Ativo</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Duração</th>
-              <th>Resolvido por</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="table-empty" id="hist-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-            <line x1="8" y1="14" x2="16" y2="14"></line>
-          </svg>
-          Nenhum evento registrado no período
+  <!-- ===== Bloco 1 — Abas ===== -->
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="ativos">Ativos (<span id="tab-ativos-count">0</span>)</button>
+    <button type="button" class="tab-btn" data-tab="historico">Histórico</button>
+  </div>
+
+  <!-- ===== Aba Ativos ===== -->
+  <div class="tab-panel active" id="tab-ativos">
+
+    <!-- Aviso de nenhuma falha operacional — visibilidade calculada via JS -->
+    <div class="alarm-banner-ok" id="alarm-banner-ok" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
+      </svg>
+      <span>Nenhuma falha operacional ativa — todos os ativos estão online</span>
+    </div>
+
+    <!-- Cards de alarme ativo — renderizados via JS -->
+    <div class="alarm-grid" id="alarm-grid"></div>
+    <div class="table-empty" id="alarm-grid-empty" hidden>Nenhum alarme ativo no momento.</div>
+  </div>
+
+  <!-- ===== Aba Histórico ===== -->
+  <div class="tab-panel" id="tab-historico">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Histórico de eventos</div>
+          <div class="card-subtitle">Alarmes e ocorrências registrados</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="hist-filters">
+          <div class="filter-field">
+            <label class="form-label" for="hist-data-ini">Data Inicial</label>
+            <input type="date" class="input" id="hist-data-ini" />
+          </div>
+          <div class="filter-field">
+            <label class="form-label" for="hist-data-fim">Data Final</label>
+            <input type="date" class="input" id="hist-data-fim" />
+          </div>
+          <button type="button" class="btn btn-primary" id="hist-filtrar">Filtrar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" id="hist-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Ativo</th>
+                <th>Tipo</th>
+                <th>Criticidade</th>
+                <th>Descrição</th>
+                <th>Reconhecido</th>
+              </tr>
+            </thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+          <div class="table-empty" id="hist-empty" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+              <line x1="8" y1="14" x2="16" y2="14"></line>
+            </svg>
+            Nenhum evento registrado no período
+          </div>
         </div>
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- ===== JS específico desta página ===== -->
 <script>
 (function () {
   'use strict';
+
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
+
+  var CRIT_CLASS = {
+    Critico: 'status-crit',
+    Alerta: 'status-alert',
+    Normal: 'status-ok'
+  };
+
+  function formatarDataHora(iso) {
+    if (!iso) return '--';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString('pt-BR');
+  }
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('alm-loading');
+  var elErrorState = document.getElementById('alm-error-state');
+  var elErrorMessage = document.getElementById('alm-error-message');
+  var elContent = document.getElementById('alm-content');
+  var elRetry = document.getElementById('alm-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   /* ===== Bloco 1 — alternância de abas ===== */
   var tabBtns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
@@ -357,17 +420,76 @@
     });
   });
 
-  /* ===== Bloco 3 — reconhecer alarme ===== */
-  document.querySelectorAll('.btn-reconhecer').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var card = document.getElementById(btn.getAttribute('data-ack'));
-      if (card) card.classList.add('is-ack');
-    });
-  });
+  /* ===== Bloco 3 — cards de alarme ativo ===== */
+  var alarmGrid = document.getElementById('alarm-grid');
+  var alarmGridEmpty = document.getElementById('alarm-grid-empty');
+  var alarmBannerOk = document.getElementById('alarm-banner-ok');
+  var tabAtivosCount = document.getElementById('tab-ativos-count');
 
-  /* ===== Bloco 4 — filtro de período do histórico (dataset vazio por ora) ===== */
+  function renderAtivos(alarmes) {
+    tabAtivosCount.textContent = String(alarmes.length);
+
+    /* Falha operacional = alarme com criticidade diferente de "Normal" (informacional) */
+    var falhas = alarmes.filter(function (a) { return a.criticidade !== 'Normal'; });
+    alarmBannerOk.hidden = falhas.length !== 0;
+
+    if (alarmes.length === 0) {
+      alarmGrid.innerHTML = '';
+      alarmGridEmpty.hidden = false;
+      return;
+    }
+    alarmGridEmpty.hidden = true;
+
+    alarmGrid.innerHTML = alarmes.map(function (a) {
+      var critClass = CRIT_CLASS[a.criticidade] || 'status-offline';
+      var ackTag = a.reconhecido
+        ? '<span class="alarm-card__ack-tag">✓ Reconhecido</span>'
+        : '<button type="button" class="btn btn-ghost btn-sm btn-reconhecer" data-id="' + a.id + '">Reconhecer</button>';
+      return (
+        '<div class="alarm-card' + (a.reconhecido ? ' is-ack' : '') + '" id="alarm-card-' + a.id + '">' +
+        '<div class="alarm-card__top">' +
+        '<div>' +
+        '<div class="alarm-card__asset">' + escapeHtml(a.equipamento && a.equipamento.nome) + '</div>' +
+        '<div class="alarm-card__local">' + escapeHtml(a.equipamento && a.equipamento.local) + '</div>' +
+        '</div>' +
+        '<span class="badge-status ' + critClass + '"><span class="dot"></span>' + escapeHtml(a.criticidade) + '</span>' +
+        '</div>' +
+        '<div class="alarm-card__body">' +
+        '<p class="alarm-card__desc"><strong>' + escapeHtml(a.titulo) + '</strong> — ' + escapeHtml(a.descricao) + '</p>' +
+        '<p class="alarm-card__since">Desde: <strong>' + escapeHtml(formatarDataHora(a.iniciado_em)) + '</strong></p>' +
+        '</div>' +
+        '<div class="alarm-card__actions">' +
+        ackTag +
+        '<button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>' +
+        '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    /* Delega clique nos botões "Reconhecer" recém-criados */
+    alarmGrid.querySelectorAll('.btn-reconhecer').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        window.CMA.api.reconhecerAlarme(id)
+          .then(function () {
+            return carregarAtivos();
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            window.alert(err.message);
+          });
+      });
+    });
+  }
+
+  /* ===== Bloco 4 — histórico de alarmes ===== */
+  var histTbody = document.getElementById('hist-tbody');
+  var histEmpty = document.getElementById('hist-empty');
   var histDataFim = document.getElementById('hist-data-fim');
   var histDataIni = document.getElementById('hist-data-ini');
+  var historicoCompleto = [];
+
   function toISODate(d) { return d.toISOString().slice(0, 10); }
   var hoje = new Date();
   var trintaDiasAtras = new Date();
@@ -375,9 +497,66 @@
   histDataFim.value = toISODate(hoje);
   histDataIni.value = toISODate(trintaDiasAtras);
 
-  document.getElementById('hist-filtrar').addEventListener('click', function () {
-    /* Sem eventos históricos cadastrados neste momento — estado vazio permanece. */
-    document.getElementById('hist-empty').hidden = false;
-  });
+  function renderHistorico(lista) {
+    if (lista.length === 0) {
+      histTbody.innerHTML = '';
+      histEmpty.hidden = false;
+      return;
+    }
+    histEmpty.hidden = true;
+    histTbody.innerHTML = lista.map(function (a) {
+      var critClass = CRIT_CLASS[a.criticidade] || 'status-offline';
+      return (
+        '<tr>' +
+        '<td>' + escapeHtml(formatarDataHora(a.iniciado_em)) + '</td>' +
+        '<td class="hi">' + escapeHtml(a.equipamento && a.equipamento.nome) + '</td>' +
+        '<td>' + escapeHtml(a.tipo) + '</td>' +
+        '<td><span class="badge-status ' + critClass + '"><span class="dot"></span>' + escapeHtml(a.criticidade) + '</span></td>' +
+        '<td>' + escapeHtml(a.descricao) + '</td>' +
+        '<td>' + (a.reconhecido ? 'Sim' : 'Não') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  function aplicarFiltroHistorico() {
+    var ini = histDataIni.value ? new Date(histDataIni.value + 'T00:00:00') : null;
+    var fim = histDataFim.value ? new Date(histDataFim.value + 'T23:59:59') : null;
+    var filtrado = historicoCompleto.filter(function (a) {
+      var d = a.iniciado_em ? new Date(a.iniciado_em) : null;
+      if (!d) return true;
+      if (ini && d < ini) return false;
+      if (fim && d > fim) return false;
+      return true;
+    });
+    renderHistorico(filtrado);
+  }
+
+  document.getElementById('hist-filtrar').addEventListener('click', aplicarFiltroHistorico);
+
+  /* ===== Orquestra o carregamento das duas abas ===== */
+  function carregarAtivos() {
+    return window.CMA.api.getAlarmes(true).then(renderAtivos);
+  }
+
+  function carregarHistorico() {
+    return window.CMA.api.getAlarmes(false).then(function (lista) {
+      historicoCompleto = lista;
+      aplicarFiltroHistorico();
+    });
+  }
+
+  function carregar() {
+    mostrarLoading();
+    Promise.all([carregarAtivos(), carregarHistorico()])
+      .then(function () {
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

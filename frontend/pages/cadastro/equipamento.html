@@ -89,58 +89,15 @@
     background: var(--parcial-hi);
   }
 
-  /* ===== Toggle Ativo/Inativo ===== */
-  .toggle {
+  /* Tag de categoria (tipo de equipamento) — cor vinda da API (tipo_cor) */
+  .cat {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-track {
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--border-hi);
-    border-radius: 999px;
-    position: relative;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--text-md);
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: color-mix(in srgb, var(--ok) 30%, transparent);
-    border-color: var(--ok);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    transform: translateX(18px);
-    background: var(--ok-hi);
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: var(--text-hi);
+    padding: 3px 9px;
+    border-radius: var(--radius-sm);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .textarea {
@@ -234,6 +191,7 @@
 
   .modal-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 14px 18px;
@@ -250,11 +208,29 @@
     grid-column: 1 / -1;
   }
 
+  .form-hint {
+    font-size: 11.5px;
+    color: var(--text-md);
+    margin-top: 6px;
+  }
+
+  .form-hint.error {
+    color: var(--crit-hi);
+  }
+
+  .form-hint.ok {
+    color: var(--ok-hi);
+  }
+
   /* ===== Modal Detalhar — visualização somente leitura ===== */
   .detail-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+  }
+
+  .detail-field--full {
+    grid-column: 1 / -1;
   }
 
   .detail-field__label {
@@ -323,6 +299,41 @@
     color: var(--text-md);
   }
 
+  /* ===== Estados de carregamento e erro (mesmo padrão do dashboard) ===== */
+  .dash-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .dash-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .dash-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: dash-spin 0.8s linear infinite;
+  }
+
+  @keyframes dash-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
   /* ===== Responsivo ===== */
   @media (max-width: 1300px) {
     .filters-grid {
@@ -352,129 +363,129 @@
   <p class="page-header__desc">Ativos monitorados cadastrados no sistema</p>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-id">ID</label>
-        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-tipo">Tipo</label>
-        <select class="select" id="flt-tipo">
-          <option value="">Todos</option>
-          <option value="Fibra">Fibra</option>
-          <option value="Hidráulico">Hidráulico</option>
-          <option value="Energia">Energia</option>
-          <option value="Sinalização">Sinalização</option>
-          <option value="Fibra/Comun.">Fibra/Comun.</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-transmissor">Transmissor/MDA</label>
-        <select class="select" id="flt-transmissor">
-          <option value="">Todos</option>
-          <option value="MDA-TAM-01">MDA-TAM-01</option>
-          <option value="MDA-BRS-01">MDA-BRS-01</option>
-          <option value="MDA-LUZ-01">MDA-LUZ-01</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-codigo">Código/Tag</label>
-        <input type="text" class="input" id="flt-codigo" placeholder="Ex.: FB-EBL-01" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-    </div>
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-linha">Linha</label>
-        <select class="select" id="flt-linha">
-          <option value="">Todas</option>
-          <option value="L10">Linha 10</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-tipolocal">Tipo de Local</label>
-        <select class="select" id="flt-tipolocal">
-          <option value="">Todos</option>
-          <option value="Sala Técnica">Sala Técnica</option>
-          <option value="Estação">Estação</option>
-          <option value="CCO">CCO</option>
-          <option value="Trecho">Trecho</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-local">Local</label>
-        <input type="text" class="input" id="flt-local" placeholder="Buscar por local..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-status">Status</label>
-        <select class="select" id="flt-status">
-          <option value="">Todos</option>
-          <option value="Online">Online</option>
-          <option value="Alerta">Alerta</option>
-          <option value="Crítico">Crítico</option>
-          <option value="Offline">Offline</option>
-          <option value="Parcial">Parcial</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-ativo">Ativo</label>
-        <select class="select" id="flt-ativo">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de carregamento ===== -->
+<div class="dash-state" id="equip-loading">
+  <div class="dash-spinner" aria-hidden="true"></div>
+  <span>Carregando equipamentos...</span>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">8 registros encontrados</div>
+<!-- ===== Estado de erro ===== -->
+<div class="dash-state" id="equip-error-state" hidden>
+  <span class="dash-state__title">Não foi possível carregar os equipamentos</span>
+  <span id="equip-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="equip-retry">Tentar novamente</button>
+</div>
+
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="equip-content" hidden>
+
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
     </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-id">ID</label>
+          <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-tipo">Tipo</label>
+          <select class="select" id="flt-tipo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-transmissor">Transmissor/MDA</label>
+          <select class="select" id="flt-transmissor">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-codigo">Código/Tag</label>
+          <input type="text" class="input" id="flt-codigo" placeholder="Ex.: FB-EBL-01" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+      </div>
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-linha">Linha</label>
+          <select class="select" id="flt-linha">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-tipolocal">Tipo de Local</label>
+          <select class="select" id="flt-tipolocal">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-local">Local</label>
+          <input type="text" class="input" id="flt-local" placeholder="Buscar por local..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-status">Status</label>
+          <select class="select" id="flt-status">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-ativo">Ativo</label>
+          <select class="select" id="flt-ativo">
+            <option value="">Todos</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
   </div>
 
-  <div class="table-wrap">
-    <table class="table" id="equip-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Código</th>
-          <th>Nome</th>
-          <th>Tipo</th>
-          <th>Local</th>
-          <th>Transmissor</th>
-          <th>Horário Operacional</th>
-          <th>Status</th>
-          <th>Valor</th>
-          <th>Última Comunicação</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="equip-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum equipamento encontrado para os filtros aplicados.</div>
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">-- registros encontrados</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="equip-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Código</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Local</th>
+            <th>Transmissor</th>
+            <th>Horário Operacional</th>
+            <th>Status</th>
+            <th>Valor</th>
+            <th>Última Comunicação</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="equip-tbody">
+          <!-- Linhas renderizadas via JS a partir dos dados da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum equipamento encontrado para os filtros aplicados.</div>
+    </div>
   </div>
+
 </div>
 
 <!-- ===== Modal Incluir / Alterar ===== -->
@@ -496,51 +507,53 @@
       <div class="form-field">
         <label class="form-label" for="form-tipo">Tipo</label>
         <select class="select" id="form-tipo">
-          <option value="Fibra">Fibra</option>
-          <option value="Hidráulico">Hidráulico</option>
-          <option value="Energia">Energia</option>
-          <option value="Sinalização">Sinalização</option>
-          <option value="Fibra/Comun.">Fibra/Comun.</option>
+          <option value="">Selecione...</option>
         </select>
       </div>
       <div class="form-field">
-        <label class="form-label" for="form-local">Local</label>
-        <input type="text" class="input" id="form-local" placeholder="Ex.: Sala Técnica LUZ" />
-      </div>
-      <div class="form-field">
-        <label class="form-label" for="form-transmissor">Transmissor/MDA</label>
-        <select class="select" id="form-transmissor">
-          <option value="MDA-TAM-01">MDA-TAM-01</option>
-          <option value="MDA-BRS-01">MDA-BRS-01</option>
-          <option value="MDA-LUZ-01">MDA-LUZ-01</option>
+        <label class="form-label" for="form-localidade">Local</label>
+        <select class="select" id="form-localidade">
+          <option value="">Selecione...</option>
         </select>
       </div>
       <div class="form-field">
-        <label class="form-label" for="form-linha">Linha</label>
-        <select class="select" id="form-linha">
-          <option value="L10">Linha 10</option>
+        <label class="form-label" for="form-mda">Transmissor/MDA</label>
+        <select class="select" id="form-mda">
+          <option value="">— Nenhum —</option>
         </select>
       </div>
       <div class="form-field">
-        <label class="form-label" for="form-tipolocal">Tipo de Local</label>
-        <select class="select" id="form-tipolocal">
-          <option value="Sala Técnica">Sala Técnica</option>
-          <option value="Estação">Estação</option>
-          <option value="CCO">CCO</option>
-          <option value="Trecho">Trecho</option>
+        <label class="form-label" for="form-status">Status</label>
+        <select class="select" id="form-status">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-maturidade">Maturidade</label>
+        <select class="select" id="form-maturidade">
+          <option value="Concluido">Concluído</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Implantacao">Implantação</option>
         </select>
       </div>
       <div class="form-field">
         <label class="form-label" for="form-horario">Horário Operacional</label>
         <input type="text" class="input" id="form-horario" placeholder="Ex.: 24h ou 06-22h" />
       </div>
+      <div class="form-field">
+        <label class="form-label" for="form-dispositivo">ID do Dispositivo</label>
+        <input type="text" class="input" id="form-dispositivo" placeholder="Opcional" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="form-responsavel">Responsável</label>
+        <input type="text" class="input" id="form-responsavel" placeholder="Opcional" />
+      </div>
       <div class="form-field full">
-        <label class="form-label">Ativo</label>
-        <label class="toggle">
-          <input type="checkbox" id="form-ativo" checked />
-          <span class="toggle-track"></span>
-          <span class="toggle-label" id="form-ativo-label">Ativo</span>
-        </label>
+        <label class="form-label" for="form-descricao">Descrição / O que monitora</label>
+        <input type="text" class="input" id="form-descricao" placeholder="Opcional" />
+      </div>
+      <div class="form-field full">
+        <div class="form-hint error" id="form-error" hidden></div>
       </div>
     </div>
   </div>
@@ -566,7 +579,7 @@
         <div class="detail-field__label">Código/Tag</div>
         <div class="detail-field__value" id="det-codigo">—</div>
       </div>
-      <div>
+      <div class="detail-field--full">
         <div class="detail-field__label">Nome</div>
         <div class="detail-field__value" id="det-nome">—</div>
       </div>
@@ -583,12 +596,12 @@
         <div class="detail-field__value" id="det-tipolocal">—</div>
       </div>
       <div>
-        <div class="detail-field__label">Transmissor/MDA</div>
-        <div class="detail-field__value" id="det-transmissor">—</div>
-      </div>
-      <div>
         <div class="detail-field__label">Linha</div>
         <div class="detail-field__value" id="det-linha">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Transmissor/MDA</div>
+        <div class="detail-field__value" id="det-transmissor">—</div>
       </div>
       <div>
         <div class="detail-field__label">Horário Operacional</div>
@@ -599,6 +612,10 @@
         <div class="detail-field__value" id="det-status">—</div>
       </div>
       <div>
+        <div class="detail-field__label">Maturidade</div>
+        <div class="detail-field__value" id="det-maturidade">—</div>
+      </div>
+      <div>
         <div class="detail-field__label">Valor</div>
         <div class="detail-field__value" id="det-valor">—</div>
       </div>
@@ -607,8 +624,16 @@
         <div class="detail-field__value" id="det-comunicacao">—</div>
       </div>
       <div>
+        <div class="detail-field__label">Responsável</div>
+        <div class="detail-field__value" id="det-responsavel">—</div>
+      </div>
+      <div>
         <div class="detail-field__label">Ativo</div>
         <div class="detail-field__value" id="det-ativo">—</div>
+      </div>
+      <div class="detail-field--full">
+        <div class="detail-field__label">Descrição</div>
+        <div class="detail-field__value" id="det-descricao">—</div>
       </div>
     </div>
   </div>
@@ -627,17 +652,14 @@
     <div class="form-grid" style="grid-template-columns: 1fr;">
       <div class="form-field">
         <label class="form-label" for="status-select">Status</label>
-        <select class="select" id="status-select">
-          <option value="Online">Online</option>
-          <option value="Alerta">Alerta</option>
-          <option value="Crítico">Crítico</option>
-          <option value="Offline">Offline</option>
-          <option value="Parcial">Parcial</option>
-        </select>
+        <select class="select" id="status-select"></select>
       </div>
       <div class="form-field">
         <label class="form-label" for="status-obs">Observação</label>
         <textarea class="textarea" id="status-obs" placeholder="Descreva o motivo da alteração..."></textarea>
+      </div>
+      <div class="form-field">
+        <div class="form-hint error" id="status-error" hidden></div>
       </div>
     </div>
   </div>
@@ -655,7 +677,7 @@
   </div>
   <div class="modal-body">
     <div class="table-wrap">
-      <table class="table">
+      <table class="table" id="hist-table">
         <thead>
           <tr>
             <th>Data/Hora</th>
@@ -665,15 +687,15 @@
             <th>Observação</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="hist-tbody"></tbody>
       </table>
-      <div class="hist-empty">
+      <div class="hist-empty" id="hist-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="4" width="18" height="16" rx="2"></rect>
           <line x1="3" y1="10" x2="21" y2="10"></line>
           <line x1="8" y1="14" x2="16" y2="14"></line>
         </svg>
-        Nenhum histórico registrado
+        <span id="hist-empty-text">Nenhum histórico registrado</span>
       </div>
     </div>
   </div>
@@ -694,6 +716,7 @@
     </div>
     <div class="confirm-text">Confirmar exclusão?</div>
     <div class="confirm-subtext" id="confirm-subtext">Esta ação não poderá ser desfeita.</div>
+    <div class="form-hint error" id="confirm-error" hidden></div>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-ghost" data-close="modal-confirm">Cancelar</button>
@@ -706,36 +729,44 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos 8 ativos ===== */
-  var EQUIPAMENTOS = [
-    { id: 1, codigo: 'FB-EBL-01', nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', transmissor: 'MDA-LUZ-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:30', ativo: true },
-    { id: 2, codigo: 'HID-TAM-01', nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 3, codigo: 'ELE-TAM-01', nome: 'Sistemas Elétricos', tipo: 'Energia', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 4, codigo: 'GER-TAM-01', nome: 'Grupo Gerador', tipo: 'Energia', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 5, codigo: 'ELE-BRS-01', nome: 'Sistemas Elétricos', tipo: 'Energia', local: 'CCO Brás', tipoLocal: 'CCO', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 6, codigo: 'CTC-TAM-01', nome: 'Monitoramento CTC', tipo: 'Sinalização', local: 'Est. Tamanduateí', tipoLocal: 'Estação', transmissor: 'MDA-TAM-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 7, codigo: 'AMV-BRS-01', nome: 'Monitoramento AMV', tipo: 'Sinalização', local: 'Brás — L10', tipoLocal: 'Estação', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '06-22h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true },
-    { id: 8, codigo: 'STO-L10-01', nome: 'STO L10', tipo: 'Fibra/Comun.', local: 'Linha 10', tipoLocal: 'Trecho', transmissor: 'MDA-BRS-01', linha: 'L10', horario: '24h', status: 'Online', valor: 'OK', comunicacao: '11/08/2026 21:28', ativo: true }
-  ];
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var CAT_CLASS = {
-    'Fibra': 'cat-fibra',
-    'Hidráulico': 'cat-hidraulico',
-    'Energia': 'cat-energia',
-    'Sinalização': 'cat-sinalizacao',
-    'Fibra/Comun.': 'cat-fibra-com'
-  };
+  function formatarDataHora(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
 
   var STATUS_CLASS = {
-    'Online': 'status-ok',
-    'Alerta': 'status-alert',
-    'Crítico': 'status-crit',
-    'Offline': 'status-offline',
-    'Parcial': 'status-parcial'
+    Online: 'status-ok',
+    Alerta: 'status-alert',
+    Critico: 'status-crit',
+    Offline: 'status-offline',
+    Parcial: 'status-parcial'
   };
 
-  var nextId = EQUIPAMENTOS.length + 1;
-  var state = { filtered: EQUIPAMENTOS.slice() };
+  var MATURIDADE_LABEL = {
+    Concluido: 'Concluído',
+    Parcial: 'Parcial',
+    Implantacao: 'Implantação'
+  };
+
+  /* ===== Dados vindos da API ===== */
+  var EQUIPAMENTOS = [];
+  var TIPOS = [];
+  var LOCALIDADES = [];
+  var STATUS_LIST = [];
+  var MDAS = [];
+  var localidadeById = {};
+  var mdaById = {};
+
+  var state = { filtered: [] };
   var editingId = null;
   var statusTargetId = null;
   var deletingId = null;
@@ -744,6 +775,34 @@
   var emptyEl = document.getElementById('table-empty');
   var countEl = document.getElementById('results-count');
 
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('equip-loading');
+  var elErrorState = document.getElementById('equip-error-state');
+  var elErrorMessage = document.getElementById('equip-error-message');
+  var elContent = document.getElementById('equip-content');
+  var elRetry = document.getElementById('equip-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
+
   function findById(id) {
     for (var i = 0; i < EQUIPAMENTOS.length; i++) {
       if (EQUIPAMENTOS[i].id === id) return EQUIPAMENTOS[i];
@@ -751,24 +810,64 @@
     return null;
   }
 
-  function statusBadge(status) {
-    var cls = STATUS_CLASS[status] || 'status-offline';
-    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + status + '</span>';
+  function statusBadge(nome) {
+    var cls = STATUS_CLASS[nome] || 'status-offline';
+    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + escapeHtml(nome) + '</span>';
+  }
+
+  function popularSelect(select, itens, getValue, getLabel, placeholder) {
+    var html = placeholder == null ? '' : '<option value="">' + escapeHtml(placeholder) + '</option>';
+    html += itens.map(function (item) {
+      return '<option value="' + escapeHtml(String(getValue(item))) + '">' + escapeHtml(getLabel(item)) + '</option>';
+    }).join('');
+    select.innerHTML = html;
+  }
+
+  /* ===== Monta selects de filtros e formulário a partir dos cadastros auxiliares ===== */
+  function popularCadastrosAuxiliares() {
+    localidadeById = {};
+    LOCALIDADES.forEach(function (l) { localidadeById[l.id] = l; });
+    mdaById = {};
+    MDAS.forEach(function (m) { mdaById[m.id] = m; });
+
+    // Filtros
+    popularSelect(document.getElementById('flt-tipo'), TIPOS, function (t) { return t.id; }, function (t) { return t.nome; }, 'Todos');
+    popularSelect(document.getElementById('flt-transmissor'), MDAS, function (m) { return m.id; }, function (m) { return m.nome; }, 'Todos');
+    popularSelect(document.getElementById('flt-status'), STATUS_LIST, function (s) { return s.id; }, function (s) { return s.nome; }, 'Todos');
+
+    var linhas = [];
+    var tiposLocal = [];
+    LOCALIDADES.forEach(function (l) {
+      if (l.linha_nome && linhas.indexOf(l.linha_nome) === -1) linhas.push(l.linha_nome);
+      if (l.tipo && tiposLocal.indexOf(l.tipo) === -1) tiposLocal.push(l.tipo);
+    });
+    popularSelect(document.getElementById('flt-linha'), linhas, function (v) { return v; }, function (v) { return v; }, 'Todas');
+    popularSelect(document.getElementById('flt-tipolocal'), tiposLocal, function (v) { return v; }, function (v) { return v; }, 'Todos');
+
+    // Formulário Incluir/Alterar
+    popularSelect(document.getElementById('form-tipo'), TIPOS, function (t) { return t.id; }, function (t) { return t.nome; }, 'Selecione...');
+    popularSelect(document.getElementById('form-localidade'), LOCALIDADES, function (l) { return l.id; }, function (l) { return l.nome + ' — ' + l.tipo; }, 'Selecione...');
+    popularSelect(document.getElementById('form-mda'), MDAS, function (m) { return m.id; }, function (m) { return m.nome; }, '— Nenhum —');
+    popularSelect(document.getElementById('form-status'), STATUS_LIST, function (s) { return s.id; }, function (s) { return s.nome; }, 'Selecione...');
+
+    // Modal Alterar Status
+    popularSelect(document.getElementById('status-select'), STATUS_LIST, function (s) { return s.id; }, function (s) { return s.nome; }, null);
   }
 
   function render() {
     tbody.innerHTML = state.filtered.map(function (e) {
+      var mda = e.mda_id != null ? mdaById[e.mda_id] : null;
       return '<tr>' +
         '<td class="td-mono">' + e.id + '</td>' +
-        '<td class="td-mono">' + e.codigo + '</td>' +
-        '<td class="hi">' + e.nome + '</td>' +
-        '<td><span class="cat ' + (CAT_CLASS[e.tipo] || '') + '">' + e.tipo + '</span></td>' +
-        '<td>' + e.local + '</td>' +
-        '<td class="td-mono">' + e.transmissor + '</td>' +
-        '<td>' + e.horario + '</td>' +
-        '<td>' + statusBadge(e.status) + '</td>' +
-        '<td class="td-mono">' + e.valor + '</td>' +
-        '<td>' + e.comunicacao + '</td>' +
+        '<td class="td-mono">' + escapeHtml(e.codigo) + '</td>' +
+        '<td class="hi">' + escapeHtml(e.nome) + '</td>' +
+        '<td><span class="cat" style="background:' + e.tipo_cor + '29;color:' + e.tipo_cor + '">' + escapeHtml(e.tipo_nome) + '</span></td>' +
+        '<td>' + escapeHtml(e.localidade_nome) + '</td>' +
+        '<td class="td-mono">' + (mda ? escapeHtml(mda.nome) : '—') + '</td>' +
+        '<td>' + escapeHtml(e.horario_op || '—') + '</td>' +
+        '<td>' + statusBadge(e.status_nome) + '</td>' +
+        '<td class="td-mono">' + escapeHtml(e.valor_atual || '—') + '</td>' +
+        '<td>' + formatarDataHora(e.ultima_comun) + '</td>' +
         '<td>' + (e.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + e.id + '">Detalhar</button>' +
@@ -788,26 +887,27 @@
   /* ===== Filtros ===== */
   function applyFilters() {
     var id = document.getElementById('flt-id').value.trim();
-    var tipo = document.getElementById('flt-tipo').value;
-    var transmissor = document.getElementById('flt-transmissor').value;
+    var tipoId = document.getElementById('flt-tipo').value;
+    var mdaId = document.getElementById('flt-transmissor').value;
     var codigo = document.getElementById('flt-codigo').value.trim().toLowerCase();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
     var linha = document.getElementById('flt-linha').value;
     var tipoLocal = document.getElementById('flt-tipolocal').value;
     var local = document.getElementById('flt-local').value.trim().toLowerCase();
-    var status = document.getElementById('flt-status').value;
+    var statusId = document.getElementById('flt-status').value;
     var ativo = document.getElementById('flt-ativo').value;
 
     state.filtered = EQUIPAMENTOS.filter(function (e) {
       if (id && String(e.id) !== id) return false;
-      if (tipo && e.tipo !== tipo) return false;
-      if (transmissor && e.transmissor !== transmissor) return false;
+      if (tipoId && String(e.tipo_id) !== tipoId) return false;
+      if (mdaId && String(e.mda_id) !== mdaId) return false;
       if (codigo && e.codigo.toLowerCase().indexOf(codigo) === -1) return false;
       if (nome && e.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (linha && e.linha !== linha) return false;
-      if (tipoLocal && e.tipoLocal !== tipoLocal) return false;
-      if (local && e.local.toLowerCase().indexOf(local) === -1) return false;
-      if (status && e.status !== status) return false;
+      var loc = localidadeById[e.localidade_id];
+      if (linha && (!loc || loc.linha_nome !== linha)) return false;
+      if (tipoLocal && (!loc || loc.tipo !== tipoLocal)) return false;
+      if (local && e.localidade_nome.toLowerCase().indexOf(local) === -1) return false;
+      if (statusId && String(e.status_id) !== statusId) return false;
       if (ativo === 'Ativo' && !e.ativo) return false;
       if (ativo === 'Inativo' && e.ativo) return false;
       return true;
@@ -829,28 +929,44 @@
   document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
 
+  /* ===== Recarrega apenas a lista de equipamentos (após criar/alterar/excluir/status) ===== */
+  function recarregarEquipamentos() {
+    return window.CMA.api.getEquipamentos().then(function (lista) {
+      EQUIPAMENTOS = lista;
+      applyFilters();
+    });
+  }
+
   /* ===== Modal Incluir/Alterar ===== */
   var modalForm = document.getElementById('modal-form');
-  var formAtivo = document.getElementById('form-ativo');
-  var formAtivoLabel = document.getElementById('form-ativo-label');
+  var formError = document.getElementById('form-error');
+  var btnSalvarForm = document.getElementById('btn-salvar-form');
 
-  formAtivo.addEventListener('change', function () {
-    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
-  });
+  function limparErroForm() {
+    formError.hidden = true;
+    formError.textContent = '';
+  }
+
+  function mostrarErroForm(msg) {
+    formError.textContent = msg;
+    formError.hidden = false;
+  }
 
   function openIncluir() {
     editingId = null;
+    limparErroForm();
     document.getElementById('modal-form-title').textContent = 'Incluir Equipamento';
     document.getElementById('form-codigo').value = '';
     document.getElementById('form-nome').value = '';
-    document.getElementById('form-tipo').value = 'Fibra';
-    document.getElementById('form-local').value = '';
-    document.getElementById('form-transmissor').value = 'MDA-TAM-01';
-    document.getElementById('form-linha').value = 'L10';
-    document.getElementById('form-tipolocal').value = 'Sala Técnica';
-    document.getElementById('form-horario').value = '24h';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
+    document.getElementById('form-tipo').value = '';
+    document.getElementById('form-localidade').value = '';
+    document.getElementById('form-mda').value = '';
+    document.getElementById('form-status').value = '';
+    document.getElementById('form-maturidade').value = 'Concluido';
+    document.getElementById('form-horario').value = '';
+    document.getElementById('form-dispositivo').value = '';
+    document.getElementById('form-responsavel').value = '';
+    document.getElementById('form-descricao').value = '';
     modalForm.showModal();
   }
 
@@ -858,50 +974,72 @@
     var e = findById(id);
     if (!e) return;
     editingId = id;
+    limparErroForm();
     document.getElementById('modal-form-title').textContent = 'Alterar Equipamento';
     document.getElementById('form-codigo').value = e.codigo;
     document.getElementById('form-nome').value = e.nome;
-    document.getElementById('form-tipo').value = e.tipo;
-    document.getElementById('form-local').value = e.local;
-    document.getElementById('form-transmissor').value = e.transmissor;
-    document.getElementById('form-linha').value = e.linha;
-    document.getElementById('form-tipolocal').value = e.tipoLocal;
-    document.getElementById('form-horario').value = e.horario;
-    formAtivo.checked = e.ativo;
-    formAtivoLabel.textContent = e.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-tipo').value = String(e.tipo_id);
+    document.getElementById('form-localidade').value = String(e.localidade_id);
+    document.getElementById('form-mda').value = e.mda_id != null ? String(e.mda_id) : '';
+    document.getElementById('form-status').value = String(e.status_id);
+    document.getElementById('form-maturidade').value = e.maturidade;
+    document.getElementById('form-horario').value = e.horario_op || '';
+    document.getElementById('form-dispositivo').value = e.dispositivo_id || '';
+    document.getElementById('form-responsavel').value = e.responsavel || '';
+    document.getElementById('form-descricao').value = e.descricao || '';
     modalForm.showModal();
   }
 
   document.getElementById('btn-incluir').addEventListener('click', openIncluir);
 
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvarForm.addEventListener('click', function () {
     var codigo = document.getElementById('form-codigo').value.trim();
     var nome = document.getElementById('form-nome').value.trim();
-    if (!codigo || !nome) {
-      alert('Preencha Código/Tag e Nome antes de salvar.');
+    var tipoId = document.getElementById('form-tipo').value;
+    var localidadeId = document.getElementById('form-localidade').value;
+    var statusId = document.getElementById('form-status').value;
+    var maturidade = document.getElementById('form-maturidade').value;
+
+    if (!codigo || !nome || !tipoId || !localidadeId || !statusId || !maturidade) {
+      mostrarErroForm('Preencha Código/Tag, Nome, Tipo, Local, Status e Maturidade antes de salvar.');
       return;
     }
+
+    var mdaValue = document.getElementById('form-mda').value;
     var payload = {
       codigo: codigo,
       nome: nome,
-      tipo: document.getElementById('form-tipo').value,
-      local: document.getElementById('form-local').value.trim(),
-      transmissor: document.getElementById('form-transmissor').value,
-      linha: document.getElementById('form-linha').value,
-      tipoLocal: document.getElementById('form-tipolocal').value,
-      horario: document.getElementById('form-horario').value.trim() || '24h',
-      ativo: formAtivo.checked
+      descricao: document.getElementById('form-descricao').value.trim() || null,
+      tipo_id: Number(tipoId),
+      localidade_id: Number(localidadeId),
+      mda_id: mdaValue ? Number(mdaValue) : null,
+      dispositivo_id: document.getElementById('form-dispositivo').value.trim() || null,
+      status_id: Number(statusId),
+      maturidade: maturidade,
+      horario_op: document.getElementById('form-horario').value.trim() || null,
+      responsavel: document.getElementById('form-responsavel').value.trim() || null
     };
 
-    if (editingId) {
-      var e = findById(editingId);
-      Object.assign(e, payload);
-    } else {
-      EQUIPAMENTOS.push(Object.assign({ id: nextId++, status: 'Online', valor: 'OK', comunicacao: '—' }, payload));
-    }
-    modalForm.close();
-    state.filtered = EQUIPAMENTOS.slice();
-    render();
+    limparErroForm();
+    btnSalvarForm.disabled = true;
+    btnSalvarForm.textContent = 'Salvando...';
+
+    var promessa = editingId
+      ? window.CMA.api.atualizarEquipamento(editingId, payload)
+      : window.CMA.api.criarEquipamento(payload);
+
+    promessa
+      .then(function () {
+        modalForm.close();
+        return recarregarEquipamentos();
+      })
+      .catch(function (err) {
+        mostrarErroForm(err.message);
+      })
+      .finally(function () {
+        btnSalvarForm.disabled = false;
+        btnSalvarForm.textContent = 'Salvar';
+      });
   });
 
   /* ===== Modal Detalhar ===== */
@@ -910,71 +1048,147 @@
   function openDetalhar(id) {
     var e = findById(id);
     if (!e) return;
+    var loc = localidadeById[e.localidade_id];
+    var mda = e.mda_id != null ? mdaById[e.mda_id] : null;
     document.getElementById('det-id').textContent = e.id;
     document.getElementById('det-codigo').textContent = e.codigo;
     document.getElementById('det-nome').textContent = e.nome;
-    document.getElementById('det-tipo').textContent = e.tipo;
-    document.getElementById('det-local').textContent = e.local;
-    document.getElementById('det-tipolocal').textContent = e.tipoLocal;
-    document.getElementById('det-transmissor').textContent = e.transmissor;
-    document.getElementById('det-linha').textContent = e.linha;
-    document.getElementById('det-horario').textContent = e.horario;
-    document.getElementById('det-status').innerHTML = statusBadge(e.status);
-    document.getElementById('det-valor').textContent = e.valor;
-    document.getElementById('det-comunicacao').textContent = e.comunicacao;
+    document.getElementById('det-tipo').textContent = e.tipo_nome;
+    document.getElementById('det-local').textContent = e.localidade_nome;
+    document.getElementById('det-tipolocal').textContent = loc ? loc.tipo : '—';
+    document.getElementById('det-linha').textContent = loc ? loc.linha_nome : '—';
+    document.getElementById('det-transmissor').textContent = mda ? mda.nome : '—';
+    document.getElementById('det-horario').textContent = e.horario_op || '—';
+    document.getElementById('det-status').innerHTML = statusBadge(e.status_nome);
+    document.getElementById('det-maturidade').textContent = MATURIDADE_LABEL[e.maturidade] || e.maturidade;
+    document.getElementById('det-valor').textContent = e.valor_atual || '—';
+    document.getElementById('det-comunicacao').textContent = formatarDataHora(e.ultima_comun);
+    document.getElementById('det-responsavel').textContent = e.responsavel || '—';
     document.getElementById('det-ativo').textContent = e.ativo ? 'Sim' : 'Não';
+    document.getElementById('det-descricao').textContent = e.descricao || '—';
     modalDetail.showModal();
   }
 
   /* ===== Modal Alterar Status ===== */
   var modalStatus = document.getElementById('modal-status');
+  var statusError = document.getElementById('status-error');
+  var btnSalvarStatus = document.getElementById('btn-salvar-status');
 
   function openStatus(id) {
     var e = findById(id);
     if (!e) return;
     statusTargetId = id;
-    document.getElementById('status-select').value = e.status;
+    statusError.hidden = true;
+    document.getElementById('status-select').value = String(e.status_id);
     document.getElementById('status-obs').value = '';
     modalStatus.showModal();
   }
 
-  document.getElementById('btn-salvar-status').addEventListener('click', function () {
+  btnSalvarStatus.addEventListener('click', function () {
     if (statusTargetId == null) return;
-    var e = findById(statusTargetId);
-    if (e) e.status = document.getElementById('status-select').value;
-    modalStatus.close();
-    render();
+    var statusId = Number(document.getElementById('status-select').value);
+    var obs = document.getElementById('status-obs').value.trim();
+
+    statusError.hidden = true;
+    btnSalvarStatus.disabled = true;
+    btnSalvarStatus.textContent = 'Salvando...';
+
+    window.CMA.api.atualizarStatus(statusTargetId, { status_id: statusId, observacao: obs || null })
+      .then(function () {
+        modalStatus.close();
+        statusTargetId = null;
+        return recarregarEquipamentos();
+      })
+      .catch(function (err) {
+        statusError.textContent = err.message;
+        statusError.hidden = false;
+      })
+      .finally(function () {
+        btnSalvarStatus.disabled = false;
+        btnSalvarStatus.textContent = 'Salvar';
+      });
   });
 
   /* ===== Modal Histórico ===== */
   var modalHistorico = document.getElementById('modal-historico');
+  var histTbody = document.getElementById('hist-tbody');
+  var histEmpty = document.getElementById('hist-empty');
+  var histEmptyText = document.getElementById('hist-empty-text');
+
+  function renderHistorico(lista) {
+    if (!lista || lista.length === 0) {
+      histTbody.innerHTML = '';
+      histEmptyText.textContent = 'Nenhum histórico registrado';
+      histEmpty.hidden = false;
+      return;
+    }
+    histEmpty.hidden = true;
+    histTbody.innerHTML = lista.map(function (h) {
+      var alteradoPor = h.usuario_nome || (h.origem === 'sistema' ? 'Sistema' : (h.origem || '—'));
+      return '<tr>' +
+        '<td>' + formatarDataHora(h.ocorrido_em) + '</td>' +
+        '<td>' + (h.status_ant_nome ? statusBadge(h.status_ant_nome) : '—') + '</td>' +
+        '<td>' + statusBadge(h.status_novo_nome) + '</td>' +
+        '<td>' + escapeHtml(alteradoPor) + '</td>' +
+        '<td>' + escapeHtml(h.observacao || '—') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
 
   function openHistorico(id) {
     var e = findById(id);
     if (!e) return;
     document.getElementById('modal-historico-title').textContent = 'Histórico — ' + e.codigo;
+    histTbody.innerHTML = '';
+    histEmptyText.textContent = 'Carregando histórico...';
+    histEmpty.hidden = false;
     modalHistorico.showModal();
+
+    window.CMA.api.getHistorico(id)
+      .then(function (lista) {
+        renderHistorico(lista);
+      })
+      .catch(function (err) {
+        histTbody.innerHTML = '';
+        histEmptyText.textContent = err.message;
+        histEmpty.hidden = false;
+      });
   }
 
   /* ===== Modal de confirmação de exclusão ===== */
   var modalConfirm = document.getElementById('modal-confirm');
+  var confirmError = document.getElementById('confirm-error');
+  var btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
 
   function openExcluir(id) {
     var e = findById(id);
     if (!e) return;
     deletingId = id;
-    document.getElementById('confirm-subtext').textContent = 'O equipamento "' + e.nome + '" será removido permanentemente.';
+    confirmError.hidden = true;
+    document.getElementById('confirm-subtext').textContent = 'O equipamento "' + e.nome + '" será removido.';
     modalConfirm.showModal();
   }
 
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+  btnConfirmarExclusao.addEventListener('click', function () {
     if (deletingId == null) return;
-    var idx = EQUIPAMENTOS.findIndex(function (e) { return e.id === deletingId; });
-    if (idx !== -1) EQUIPAMENTOS.splice(idx, 1);
-    deletingId = null;
-    modalConfirm.close();
-    state.filtered = EQUIPAMENTOS.slice();
-    render();
+    confirmError.hidden = true;
+    btnConfirmarExclusao.disabled = true;
+    btnConfirmarExclusao.textContent = 'Excluindo...';
+
+    window.CMA.api.excluirEquipamento(deletingId)
+      .then(function () {
+        deletingId = null;
+        modalConfirm.close();
+        return recarregarEquipamentos();
+      })
+      .catch(function (err) {
+        confirmError.textContent = err.message;
+        confirmError.hidden = false;
+      })
+      .finally(function () {
+        btnConfirmarExclusao.disabled = false;
+        btnConfirmarExclusao.textContent = 'Confirmar';
+      });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -998,6 +1212,32 @@
     });
   });
 
-  render();
+  /* ===== Orquestra o carregamento inicial: equipamentos + cadastros auxiliares ===== */
+  function carregar() {
+    mostrarLoading();
+    Promise.all([
+      window.CMA.api.getEquipamentos(),
+      window.CMA.api.getTiposEquipamento(),
+      window.CMA.api.getLocalidades(),
+      window.CMA.api.getStatusOperacional(),
+      window.CMA.api.getMdas()
+    ])
+      .then(function (resultados) {
+        EQUIPAMENTOS = resultados[0];
+        TIPOS = resultados[1];
+        LOCALIDADES = resultados[2];
+        STATUS_LIST = resultados[3];
+        MDAS = resultados[4];
+        popularCadastrosAuxiliares();
+        state.filtered = EQUIPAMENTOS.slice();
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

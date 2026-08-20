@@ -106,60 +106,6 @@
     border: 1px solid color-mix(in srgb, var(--cad) 55%, transparent);
   }
 
-  /* ===== Toggle Ativo/Inativo ===== */
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-track {
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--border-hi);
-    border-radius: 999px;
-    position: relative;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--text-md);
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: color-mix(in srgb, var(--ok) 30%, transparent);
-    border-color: var(--ok);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    transform: translateX(18px);
-    background: var(--ok-hi);
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: var(--text-hi);
-  }
-
   /* ===== Modais (<dialog> nativo) ===== */
   dialog.modal {
     border: none;
@@ -228,6 +174,7 @@
 
   .modal-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 14px 18px;
@@ -254,6 +201,41 @@
     color: var(--ok-hi);
   }
 
+  /* ===== Estados de carregamento e erro (mesmo padrão do dashboard) ===== */
+  .dash-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .dash-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .dash-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: dash-spin 0.8s linear infinite;
+  }
+
+  @keyframes dash-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
   /* ===== Responsivo ===== */
   @media (max-width: 900px) {
     .filters-grid {
@@ -275,79 +257,96 @@
   <p class="page-header__desc">Controle de acesso e perfis de usuário</p>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-email">E-mail</label>
-        <input type="text" class="input" id="flt-email" placeholder="Buscar por e-mail..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-perfil">Perfil</label>
-        <select class="select" id="flt-perfil">
-          <option value="">Todos</option>
-          <option value="Operador CMA">Operador CMA</option>
-          <option value="Administrador">Administrador</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-ativo">Ativo</label>
-        <select class="select" id="flt-ativo">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de carregamento ===== -->
+<div class="dash-state" id="usr-loading">
+  <div class="dash-spinner" aria-hidden="true"></div>
+  <span>Carregando usuários...</span>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">3 registros encontrados</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
-  </div>
-
-  <div class="table-wrap">
-    <table class="table" id="usuarios-table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>E-mail</th>
-          <th>Perfil</th>
-          <th>Último Acesso</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="usuarios-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum usuário encontrado para os filtros aplicados.</div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="dash-state" id="usr-error-state" hidden>
+  <span class="dash-state__title">Não foi possível carregar os usuários</span>
+  <span id="usr-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="usr-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Modal Incluir / Alterar ===== -->
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="usr-content" hidden>
+
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-email">E-mail</label>
+          <input type="text" class="input" id="flt-email" placeholder="Buscar por e-mail..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-perfil">Perfil</label>
+          <select class="select" id="flt-perfil">
+            <option value="">Todos</option>
+            <option value="1">Administrador</option>
+            <option value="2">Operador CMA</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-ativo">Ativo</label>
+          <select class="select" id="flt-ativo">
+            <option value="">Todos</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">-- registros encontrados</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="usuarios-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Último Acesso</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="usuarios-tbody">
+          <!-- Linhas renderizadas via JS a partir dos dados da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum usuário encontrado para os filtros aplicados.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Modal Alterar ===== -->
 <dialog class="modal" id="modal-form">
   <div class="modal-header">
-    <div class="modal-title" id="modal-form-title">Incluir Usuário</div>
+    <div class="modal-title" id="modal-form-title">Alterar Usuário</div>
     <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
   </div>
   <div class="modal-body">
@@ -363,17 +362,12 @@
       <div class="form-field">
         <label class="form-label" for="form-perfil">Perfil</label>
         <select class="select" id="form-perfil">
-          <option value="Operador CMA">Operador CMA</option>
-          <option value="Administrador">Administrador</option>
+          <option value="2">Operador CMA</option>
+          <option value="1">Administrador</option>
         </select>
       </div>
       <div class="form-field">
-        <label class="form-label">Ativo</label>
-        <label class="toggle">
-          <input type="checkbox" id="form-ativo" checked />
-          <span class="toggle-track"></span>
-          <span class="toggle-label" id="form-ativo-label">Ativo</span>
-        </label>
+        <div class="form-hint error" id="form-error" hidden></div>
       </div>
     </div>
   </div>
@@ -393,11 +387,11 @@
     <div class="form-grid">
       <div class="form-field">
         <label class="form-label" for="senha-nova">Nova Senha</label>
-        <input type="password" class="input" id="senha-nova" placeholder="Digite a nova senha" />
+        <input type="password" class="input" id="senha-nova" placeholder="Digite a nova senha" autocomplete="new-password" />
       </div>
       <div class="form-field">
         <label class="form-label" for="senha-confirmar">Confirmar Senha</label>
-        <input type="password" class="input" id="senha-confirmar" placeholder="Repita a nova senha" />
+        <input type="password" class="input" id="senha-confirmar" placeholder="Repita a nova senha" autocomplete="new-password" />
         <div class="form-hint" id="senha-hint">As senhas devem ser iguais.</div>
       </div>
     </div>
@@ -413,26 +407,62 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos usuários ===== */
-  var USUARIOS = [
-    { id: 1, nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br', perfil: 'Administrador', ultimoAcesso: '11/08/2026 21:55', ativo: true },
-    { id: 2, nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br', perfil: 'Operador CMA', ultimoAcesso: '11/08/2026 18:30', ativo: true },
-    { id: 3, nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br', perfil: 'Operador CMA', ultimoAcesso: '10/08/2026 08:15', ativo: true }
-  ];
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
+  function formatarDataHora(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  /* Perfis fixos (não há endpoint /api/perfis — ids 1/2 seedados no banco) */
   var PERFIL_CLASS = {
     'Administrador': 'perfil-admin',
     'Operador CMA': 'perfil-operador'
   };
 
-  var nextId = USUARIOS.length + 1;
-  var state = { filtered: USUARIOS.slice() };
+  var USUARIOS = [];
+  var state = { filtered: [] };
   var editingId = null;
   var senhaTargetId = null;
 
   var tbody = document.getElementById('usuarios-tbody');
   var emptyEl = document.getElementById('table-empty');
   var countEl = document.getElementById('results-count');
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('usr-loading');
+  var elErrorState = document.getElementById('usr-error-state');
+  var elErrorMessage = document.getElementById('usr-error-message');
+  var elContent = document.getElementById('usr-content');
+  var elRetry = document.getElementById('usr-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   function findById(id) {
     for (var i = 0; i < USUARIOS.length; i++) {
@@ -441,17 +471,17 @@
     return null;
   }
 
-  function perfilBadge(perfil) {
-    return '<span class="badge-perfil ' + (PERFIL_CLASS[perfil] || '') + '">' + perfil + '</span>';
+  function perfilBadge(perfilNome) {
+    return '<span class="badge-perfil ' + (PERFIL_CLASS[perfilNome] || '') + '">' + escapeHtml(perfilNome) + '</span>';
   }
 
   function render() {
     tbody.innerHTML = state.filtered.map(function (u) {
       return '<tr id="row-' + u.id + '">' +
-        '<td class="hi">' + u.nome + '</td>' +
-        '<td>' + u.email + '</td>' +
-        '<td>' + perfilBadge(u.perfil) + '</td>' +
-        '<td>' + u.ultimoAcesso + '</td>' +
+        '<td class="hi">' + escapeHtml(u.nome) + '</td>' +
+        '<td>' + escapeHtml(u.email) + '</td>' +
+        '<td>' + perfilBadge(u.perfil_nome) + '</td>' +
+        '<td>' + formatarDataHora(u.ultimo_acesso) + '</td>' +
         '<td>' + (u.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + u.id + '">Alterar</button>' +
@@ -470,13 +500,13 @@
   function applyFilters() {
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
     var email = document.getElementById('flt-email').value.trim().toLowerCase();
-    var perfil = document.getElementById('flt-perfil').value;
+    var perfilId = document.getElementById('flt-perfil').value;
     var ativo = document.getElementById('flt-ativo').value;
 
     state.filtered = USUARIOS.filter(function (u) {
       if (nome && u.nome.toLowerCase().indexOf(nome) === -1) return false;
       if (email && u.email.toLowerCase().indexOf(email) === -1) return false;
-      if (perfil && u.perfil !== perfil) return false;
+      if (perfilId && String(u.perfil_id) !== perfilId) return false;
       if (ativo === 'Ativo' && !u.ativo) return false;
       if (ativo === 'Inativo' && u.ativo) return false;
       return true;
@@ -496,73 +526,93 @@
   document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
 
-  /* ===== Modal Incluir/Alterar ===== */
+  /* ===== Recarrega a lista de usuários (após alterar/ativar/desativar) ===== */
+  function recarregarUsuarios() {
+    return window.CMA.api.getUsuarios().then(function (lista) {
+      USUARIOS = lista;
+      applyFilters();
+    });
+  }
+
+  /* ===== Modal Alterar ===== */
   var modalForm = document.getElementById('modal-form');
-  var formAtivo = document.getElementById('form-ativo');
-  var formAtivoLabel = document.getElementById('form-ativo-label');
+  var formError = document.getElementById('form-error');
+  var btnSalvarForm = document.getElementById('btn-salvar-form');
 
-  formAtivo.addEventListener('change', function () {
-    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
-  });
+  function limparErroForm() {
+    formError.hidden = true;
+    formError.textContent = '';
+  }
 
-  function openIncluir() {
-    editingId = null;
-    document.getElementById('modal-form-title').textContent = 'Incluir Usuário';
-    document.getElementById('form-nome').value = '';
-    document.getElementById('form-email').value = '';
-    document.getElementById('form-perfil').value = 'Operador CMA';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
-    modalForm.showModal();
+  function mostrarErroForm(msg) {
+    formError.textContent = msg;
+    formError.hidden = false;
   }
 
   function openAlterar(id) {
     var u = findById(id);
     if (!u) return;
     editingId = id;
+    limparErroForm();
     document.getElementById('modal-form-title').textContent = 'Alterar Usuário';
     document.getElementById('form-nome').value = u.nome;
     document.getElementById('form-email').value = u.email;
-    document.getElementById('form-perfil').value = u.perfil;
-    formAtivo.checked = u.ativo;
-    formAtivoLabel.textContent = u.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-perfil').value = String(u.perfil_id);
     modalForm.showModal();
   }
 
-  document.getElementById('btn-incluir').addEventListener('click', openIncluir);
-
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvarForm.addEventListener('click', function () {
+    if (editingId == null) return;
     var nome = document.getElementById('form-nome').value.trim();
     var email = document.getElementById('form-email').value.trim();
     if (!nome || !email) {
-      alert('Preencha Nome e E-mail antes de salvar.');
+      mostrarErroForm('Preencha Nome e E-mail antes de salvar.');
       return;
     }
-    var perfil = document.getElementById('form-perfil').value;
-    var ativo = formAtivo.checked;
+    var perfilId = Number(document.getElementById('form-perfil').value);
 
-    if (editingId) {
-      var u = findById(editingId);
-      u.nome = nome;
-      u.email = email;
-      u.perfil = perfil;
-      u.ativo = ativo;
-    } else {
-      USUARIOS.push({ id: nextId++, nome: nome, email: email, perfil: perfil, ultimoAcesso: '—', ativo: ativo });
-    }
-    modalForm.close();
-    state.filtered = USUARIOS.slice();
-    render();
+    limparErroForm();
+    btnSalvarForm.disabled = true;
+    btnSalvarForm.textContent = 'Salvando...';
+
+    window.CMA.api.atualizarUsuario(editingId, { nome: nome, email: email, perfil_id: perfilId })
+      .then(function () {
+        modalForm.close();
+        editingId = null;
+        return recarregarUsuarios();
+      })
+      .catch(function (err) {
+        mostrarErroForm(err.message);
+      })
+      .finally(function () {
+        btnSalvarForm.disabled = false;
+        btnSalvarForm.textContent = 'Salvar';
+      });
   });
 
   /* ===== Ação rápida: Ativar/Desativar ===== */
   function toggleAtivo(id) {
     var u = findById(id);
     if (!u) return;
-    u.ativo = !u.ativo;
-    render();
+    var novoValor = !u.ativo;
     var row = document.getElementById('row-' + id);
-    if (row) row.classList.add('flash');
+    var btn = row ? row.querySelector('[data-action="toggle-ativo"]') : null;
+    if (btn) btn.disabled = true;
+
+    window.CMA.api.ativarUsuario(id, novoValor)
+      .then(function () {
+        return recarregarUsuarios();
+      })
+      .then(function () {
+        var novaLinha = document.getElementById('row-' + id);
+        if (novaLinha) novaLinha.classList.add('flash');
+      })
+      .catch(function (err) {
+        alert(err.message);
+      })
+      .finally(function () {
+        if (btn) btn.disabled = false;
+      });
   }
 
   /* ===== Modal Redefinir Senha ===== */
@@ -617,9 +667,30 @@
 
   btnSalvarSenha.addEventListener('click', function () {
     if (btnSalvarSenha.disabled || senhaTargetId == null) return;
-    modalSenha.close();
-    alert('Senha redefinida com sucesso.');
-    senhaTargetId = null;
+    var novaSenha = senhaNova.value;
+    var idAlvo = senhaTargetId;
+
+    btnSalvarSenha.disabled = true;
+    btnSalvarSenha.textContent = 'Salvando...';
+    senhaHint.className = 'form-hint';
+    senhaHint.textContent = 'Redefinindo senha...';
+
+    window.CMA.api.redefinirSenhaUsuario(idAlvo, novaSenha)
+      .then(function () {
+        modalSenha.close();
+        senhaTargetId = null;
+        senhaNova.value = '';
+        senhaConfirmar.value = '';
+        alert('Senha redefinida com sucesso.');
+      })
+      .catch(function (err) {
+        senhaHint.className = 'form-hint error';
+        senhaHint.textContent = err.message;
+        btnSalvarSenha.disabled = false;
+      })
+      .finally(function () {
+        btnSalvarSenha.textContent = 'Salvar';
+      });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -641,6 +712,21 @@
     });
   });
 
-  render();
+  /* ===== Orquestra o carregamento inicial ===== */
+  function carregar() {
+    mostrarLoading();
+    window.CMA.api.getUsuarios()
+      .then(function (lista) {
+        USUARIOS = lista;
+        state.filtered = USUARIOS.slice();
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

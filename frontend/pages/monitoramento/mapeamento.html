@@ -196,6 +196,41 @@
       width: 100%;
     }
   }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .mp-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .mp-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .mp-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: mp-spin 0.8s linear infinite;
+  }
+
+  @keyframes mp-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -205,8 +240,21 @@
   <p class="page-header__desc">Localização geográfica dos ativos monitorados — Linha 10</p>
 </div>
 
+<!-- ===== Estado de carregamento ===== -->
+<div class="mp-state" id="mp-loading">
+  <div class="mp-spinner" aria-hidden="true"></div>
+  <span>Carregando mapeamento...</span>
+</div>
+
+<!-- ===== Estado de erro ===== -->
+<div class="mp-state" id="mp-error-state" hidden>
+  <span class="mp-state__title">Não foi possível carregar o mapeamento</span>
+  <span id="mp-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="mp-retry">Tentar novamente</button>
+</div>
+
 <!-- ===== Layout — mapa + painel lateral ===== -->
-<div class="map-layout">
+<div class="map-layout" id="mp-content" hidden>
 
   <!-- ===== Bloco 1 — Mapa esquemático da Linha 10 ===== -->
   <div class="map-main">
@@ -239,52 +287,8 @@
             <circle class="map-station-dot" cx="800" cy="130" r="8"></circle>
             <text class="map-station-label" x="800" y="158">Guaianases</text>
 
-            <!-- Conector do pin "Linha 10 (trecho)" — não fica sobre uma estação específica -->
-            <line class="map-connector" x1="530" y1="72" x2="530" y2="130"></line>
-
-            <!-- ===== Pins dos ativos ===== -->
-            <!-- Luz — Sala Técnica LUZ -->
-            <line class="map-connector" x1="80" y1="72" x2="80" y2="122"></line>
-            <circle class="map-pin is-parcial" r="12" cx="80" cy="72" fill="var(--ok-hi)"
-              data-id="1" data-name="Mon. Fibra Ebilock Luz L10" data-local="Sala Técnica LUZ"
-              data-cat="Fibra" data-status="Online" data-mat="Parcial"></circle>
-
-            <!-- Brás — CCO Brás + Brás Linha 10 -->
-            <line class="map-connector" x1="246" y1="72" x2="260" y2="122"></line>
-            <circle class="map-pin" r="12" cx="246" cy="72" fill="var(--ok-hi)"
-              data-id="5" data-name="Sistemas Elétricos" data-local="CCO Brás"
-              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
-
-            <line class="map-connector" x1="278" y1="72" x2="260" y2="122"></line>
-            <circle class="map-pin" r="12" cx="278" cy="72" fill="var(--ok-hi)"
-              data-id="7" data-name="Monitoramento AMV" data-local="Brás — Linha 10"
-              data-cat="Sinalização" data-status="Online" data-mat="Concluído"></circle>
-
-            <!-- Tamanduateí — 4 ativos -->
-            <line class="map-connector" x1="404" y1="72" x2="440" y2="122"></line>
-            <circle class="map-pin" r="12" cx="404" cy="72" fill="var(--ok-hi)"
-              data-id="2" data-name="Sist. Acionamento de Bombas" data-local="Est. Tamanduateí"
-              data-cat="Hidráulico" data-status="Online" data-mat="Concluído"></circle>
-
-            <line class="map-connector" x1="428" y1="72" x2="440" y2="122"></line>
-            <circle class="map-pin" r="12" cx="428" cy="72" fill="var(--ok-hi)"
-              data-id="3" data-name="Sistemas Elétricos" data-local="Est. Tamanduateí"
-              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
-
-            <line class="map-connector" x1="452" y1="72" x2="440" y2="122"></line>
-            <circle class="map-pin" r="12" cx="452" cy="72" fill="var(--ok-hi)"
-              data-id="4" data-name="Grupo Gerador" data-local="Est. Tamanduateí"
-              data-cat="Energia" data-status="Online" data-mat="Concluído"></circle>
-
-            <line class="map-connector" x1="476" y1="72" x2="440" y2="122"></line>
-            <circle class="map-pin" r="12" cx="476" cy="72" fill="var(--ok-hi)"
-              data-id="6" data-name="Monitoramento CTC" data-local="Est. Tamanduateí"
-              data-cat="Sinalização" data-status="Online" data-mat="Concluído"></circle>
-
-            <!-- Trecho Linha 10 — STO L10 (não vinculado a uma única estação) -->
-            <circle class="map-pin is-parcial" r="12" cx="530" cy="72" fill="var(--ok-hi)"
-              data-id="8" data-name="STO L10" data-local="Linha 10 (trecho)"
-              data-cat="Fibra/Comun." data-status="Online" data-mat="Parcial"></circle>
+            <!-- ===== Pins dos ativos — gerados via JS a partir dos equipamentos reais ===== -->
+            <g id="map-pins-layer"></g>
           </svg>
 
           <!-- Tooltip flutuante -->
@@ -316,30 +320,21 @@
           <label class="form-label" for="flt-categoria">Categoria</label>
           <select class="select" id="flt-categoria">
             <option value="">Todas</option>
-            <option value="Fibra">Fibra</option>
-            <option value="Hidráulico">Hidráulico</option>
-            <option value="Energia">Energia</option>
-            <option value="Sinalização">Sinalização</option>
-            <option value="Fibra/Comun.">Fibra/Comun.</option>
           </select>
         </div>
         <div class="filter-field">
           <label class="form-label" for="flt-status">Status</label>
           <select class="select" id="flt-status">
             <option value="">Todos</option>
-            <option value="Online">Online</option>
-            <option value="Parcial">Parcial</option>
-            <option value="Alerta">Alerta</option>
-            <option value="Offline">Offline</option>
           </select>
         </div>
         <div class="filter-field">
           <label class="form-label" for="flt-maturidade">Maturidade</label>
           <select class="select" id="flt-maturidade">
             <option value="">Todas</option>
-            <option value="Concluído">Concluído</option>
+            <option value="Concluido">Concluído</option>
             <option value="Parcial">Parcial</option>
-            <option value="Em Implantação">Em Implantação</option>
+            <option value="Implantacao">Em Implantação</option>
           </select>
         </div>
         <div class="filter-actions">
@@ -362,15 +357,9 @@
               <th>Qtd.</th>
             </tr>
           </thead>
-          <tbody>
-            <tr><td>Fibra</td><td class="td-mono" data-cat-total="Fibra">1</td></tr>
-            <tr><td>Hidráulico</td><td class="td-mono" data-cat-total="Hidráulico">1</td></tr>
-            <tr><td>Energia</td><td class="td-mono" data-cat-total="Energia">3</td></tr>
-            <tr><td>Sinalização</td><td class="td-mono" data-cat-total="Sinalização">2</td></tr>
-            <tr><td>Fibra/Comun.</td><td class="td-mono" data-cat-total="Fibra/Comun.">1</td></tr>
-          </tbody>
+          <tbody id="totals-tbody"></tbody>
           <tfoot>
-            <tr><td>Total geral</td><td class="td-mono" id="totals-geral">8</td></tr>
+            <tr><td>Total geral</td><td class="td-mono" id="totals-geral">0</td></tr>
           </tfoot>
         </table>
       </div>
@@ -384,20 +373,78 @@
 (function () {
   'use strict';
 
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
+
+  var MATURIDADE_LABEL = {
+    Concluido: 'Concluído',
+    Parcial: 'Parcial',
+    Implantacao: 'Implantação'
+  };
+
+  /* ===== Esquema estático da Linha 10 — mesma disposição de pins do mock,
+     agora usada apenas para posicionar os equipamentos reais por localidade.
+     A API não fornece coordenadas de mapa; sem correspondência aqui o
+     equipamento entra nos totais mas não ganha um pin visível. ===== */
+  var LOCAL_GROUPS = {
+    'Sala Técnica LUZ': { anchorX: 80, stationX: 80, connectY: 122 },
+    'CCO Brás': { anchorX: 246, stationX: 260, connectY: 122 },
+    'Brás — Linha 10': { anchorX: 278, stationX: 260, connectY: 122 },
+    'Est. Tamanduateí': { anchorX: 440, stationX: 440, connectY: 122 },
+    /* "trecho" não fica sobre uma estação específica — conector desce direto até o traçado da linha (y=130) */
+    'Linha 10 (trecho)': { anchorX: 530, stationX: 530, connectY: 130 }
+  };
+  var PIN_Y = 72;
+  var PIN_SPACING = 24;
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('mp-loading');
+  var elErrorState = document.getElementById('mp-error-state');
+  var elErrorMessage = document.getElementById('mp-error-message');
+  var elContent = document.getElementById('mp-content');
+  var elRetry = document.getElementById('mp-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
+
   /* ===== Tooltip — segue o pin em hover/mousemove ===== */
   var wrap = document.getElementById('map-svg-wrap');
   var tooltip = document.getElementById('map-tooltip');
   var tooltipTitle = document.getElementById('map-tooltip-title');
   var tooltipBody = document.getElementById('map-tooltip-body');
-  var pins = Array.prototype.slice.call(document.querySelectorAll('.map-pin'));
+  var pinsLayer = document.getElementById('map-pins-layer');
+  var pinRefs = []; // { el, eq, localidade }
 
   function showTooltip(pin, evt) {
     var wrapRect = wrap.getBoundingClientRect();
     tooltipTitle.textContent = pin.getAttribute('data-name');
     tooltipBody.innerHTML =
-      pin.getAttribute('data-local') + '<br>' +
-      'Status: <strong style="color: var(--ok-hi)">' + pin.getAttribute('data-status') + '</strong> · ' +
-      'Maturidade: ' + pin.getAttribute('data-mat');
+      escapeHtml(pin.getAttribute('data-local')) + '<br>' +
+      'Status: <strong style="color: ' + pin.getAttribute('data-statuscor') + '">' + escapeHtml(pin.getAttribute('data-status')) + '</strong> · ' +
+      'Maturidade: ' + escapeHtml(MATURIDADE_LABEL[pin.getAttribute('data-mat')] || pin.getAttribute('data-mat'));
     tooltip.style.display = 'block';
 
     var x = evt.clientX - wrapRect.left + 14;
@@ -412,11 +459,57 @@
     tooltip.style.display = 'none';
   }
 
-  pins.forEach(function (pin) {
-    pin.addEventListener('mouseenter', function (evt) { showTooltip(pin, evt); });
-    pin.addEventListener('mousemove', function (evt) { showTooltip(pin, evt); });
-    pin.addEventListener('mouseleave', hideTooltip);
-  });
+  function criarSvgEl(nome, attrs) {
+    var el = document.createElementNS(SVG_NS, nome);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    return el;
+  }
+
+  /* ===== Gera os pins no mapa a partir dos equipamentos agrupados por localidade ===== */
+  function renderPins(equipamentosPorLocalidade) {
+    pinsLayer.innerHTML = '';
+    pinRefs = [];
+
+    Object.keys(LOCAL_GROUPS).forEach(function (nomeLocal) {
+      var grupo = LOCAL_GROUPS[nomeLocal];
+      var lista = equipamentosPorLocalidade[nomeLocal] || [];
+      if (lista.length === 0) return;
+
+      var n = lista.length;
+      var startX = grupo.anchorX - ((n - 1) * PIN_SPACING) / 2;
+
+      lista.forEach(function (eq, i) {
+        var cx = startX + i * PIN_SPACING;
+
+        var connector = criarSvgEl('line', {
+          class: 'map-connector',
+          x1: cx, y1: PIN_Y, x2: grupo.stationX, y2: grupo.connectY
+        });
+        pinsLayer.appendChild(connector);
+
+        var pinClass = 'map-pin' + (eq.maturidade === 'Parcial' ? ' is-parcial' : '');
+        var pin = criarSvgEl('circle', {
+          class: pinClass,
+          r: 12, cx: cx, cy: PIN_Y,
+          fill: eq.status_cor || 'var(--ok-hi)',
+          'data-id': eq.id,
+          'data-name': eq.nome,
+          'data-local': nomeLocal,
+          'data-cat': eq.tipo_nome,
+          'data-status': eq.status_nome,
+          'data-mat': eq.maturidade,
+          'data-statuscor': eq.status_cor || 'var(--text-md)'
+        });
+
+        pin.addEventListener('mouseenter', function (evt) { showTooltip(pin, evt); });
+        pin.addEventListener('mousemove', function (evt) { showTooltip(pin, evt); });
+        pin.addEventListener('mouseleave', hideTooltip);
+
+        pinsLayer.appendChild(pin);
+        pinRefs.push({ el: pin, eq: eq });
+      });
+    });
+  }
 
   /* ===== Filtros — categoria / status / maturidade aplicados aos pins e totais ===== */
   var selCategoria = document.getElementById('flt-categoria');
@@ -425,34 +518,73 @@
   var btnAplicar = document.getElementById('flt-aplicar');
   var btnLimpar = document.getElementById('flt-limpar');
   var totalGeralEl = document.getElementById('totals-geral');
-  var totalCells = Array.prototype.slice.call(document.querySelectorAll('[data-cat-total]'));
+  var totalsTbody = document.getElementById('totals-tbody');
+  var equipamentosAll = [];
+  var categoriasOrdem = [];
+
+  /* Popula os <select> de categoria/status a partir dos valores reais encontrados */
+  function popularFiltros() {
+    var categorias = [];
+    var statusList = [];
+    equipamentosAll.forEach(function (eq) {
+      if (eq.tipo_nome && categorias.indexOf(eq.tipo_nome) === -1) categorias.push(eq.tipo_nome);
+      if (eq.status_nome && statusList.indexOf(eq.status_nome) === -1) statusList.push(eq.status_nome);
+    });
+    categorias.sort();
+    statusList.sort();
+    categoriasOrdem = categorias;
+
+    categorias.forEach(function (cat) {
+      var opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      selCategoria.appendChild(opt);
+    });
+    statusList.forEach(function (st) {
+      var opt = document.createElement('option');
+      opt.value = st;
+      opt.textContent = st;
+      selStatus.appendChild(opt);
+    });
+  }
+
+  /* Monta as linhas da tabela totalizadora — uma por categoria encontrada */
+  function montarLinhasTotais() {
+    totalsTbody.innerHTML = categoriasOrdem.map(function (cat) {
+      return '<tr><td>' + escapeHtml(cat) + '</td><td class="td-mono" data-cat-total="' + escapeHtml(cat) + '">0</td></tr>';
+    }).join('');
+  }
 
   function applyFilters() {
     var cat = selCategoria.value;
     var status = selStatus.value;
     var mat = selMaturidade.value;
 
+    /* Visibilidade dos pins no mapa */
+    pinRefs.forEach(function (ref) {
+      var matchCat = !cat || ref.eq.tipo_nome === cat;
+      var matchStatus = !status || ref.eq.status_nome === status;
+      var matchMat = !mat || ref.eq.maturidade === mat;
+      ref.el.classList.toggle('is-hidden', !(matchCat && matchStatus && matchMat));
+    });
+
+    /* Totais — calculados sobre todos os equipamentos reais, não só os com pin no mapa */
     var counts = {};
     var totalVisible = 0;
-
-    pins.forEach(function (pin) {
-      var matchCat = !cat || pin.getAttribute('data-cat') === cat;
-      var matchStatus = !status || pin.getAttribute('data-status') === status;
-      var matchMat = !mat || pin.getAttribute('data-mat') === mat;
-      var visible = matchCat && matchStatus && matchMat;
-
-      pin.classList.toggle('is-hidden', !visible);
-
-      if (visible) {
-        var pinCat = pin.getAttribute('data-cat');
-        counts[pinCat] = (counts[pinCat] || 0) + 1;
+    equipamentosAll.forEach(function (eq) {
+      var matchCat = !cat || eq.tipo_nome === cat;
+      var matchStatus = !status || eq.status_nome === status;
+      var matchMat = !mat || eq.maturidade === mat;
+      if (matchCat && matchStatus && matchMat) {
+        counts[eq.tipo_nome] = (counts[eq.tipo_nome] || 0) + 1;
         totalVisible++;
       }
     });
 
+    var totalCells = Array.prototype.slice.call(document.querySelectorAll('[data-cat-total]'));
     totalCells.forEach(function (cell) {
-      var pinCat = cell.getAttribute('data-cat-total');
-      cell.textContent = counts[pinCat] || 0;
+      var cellCat = cell.getAttribute('data-cat-total');
+      cell.textContent = counts[cellCat] || 0;
     });
     totalGeralEl.textContent = totalVisible;
   }
@@ -466,5 +598,39 @@
 
   btnAplicar.addEventListener('click', applyFilters);
   btnLimpar.addEventListener('click', clearFilters);
+
+  /* ===== Carregamento — equipamentos + localidades reais ===== */
+  function carregar() {
+    mostrarLoading();
+    Promise.all([window.CMA.api.getEquipamentos(), window.CMA.api.getLocalidades()])
+      .then(function (resultados) {
+        var equipamentos = resultados[0];
+        var localidades = resultados[1];
+
+        equipamentosAll = equipamentos;
+
+        var localidadeNomePorId = {};
+        localidades.forEach(function (loc) { localidadeNomePorId[loc.id] = loc.nome; });
+
+        var equipamentosPorLocalidade = {};
+        equipamentos.forEach(function (eq) {
+          var nomeLocal = localidadeNomePorId[eq.localidade_id] || eq.localidade_nome;
+          if (!equipamentosPorLocalidade[nomeLocal]) equipamentosPorLocalidade[nomeLocal] = [];
+          equipamentosPorLocalidade[nomeLocal].push(eq);
+        });
+
+        renderPins(equipamentosPorLocalidade);
+        popularFiltros();
+        montarLinhasTotais();
+        applyFilters();
+
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

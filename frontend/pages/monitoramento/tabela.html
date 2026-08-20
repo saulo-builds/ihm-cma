@@ -128,6 +128,51 @@
       align-items: flex-start;
     }
   }
+
+  /* Badge de status "Parcial" — não existe em badge.css (só ok/alert/crit/offline) */
+  .badge-status.status-parcial {
+    background: var(--parcial-lo);
+    color: var(--parcial-hi);
+    border: 1px solid var(--parcial);
+  }
+  .badge-status.status-parcial .dot {
+    background: var(--parcial-hi);
+  }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .tbl-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .tbl-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tbl-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: tbl-spin 0.8s linear infinite;
+  }
+
+  @keyframes tbl-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -136,6 +181,22 @@
   <h1 class="page-header__title">Tabela</h1>
   <p class="page-header__desc">Lista completa dos ativos com filtros avançados</p>
 </div>
+
+<!-- ===== Estado de carregamento ===== -->
+<div class="tbl-state" id="tbl-loading">
+  <div class="tbl-spinner" aria-hidden="true"></div>
+  <span>Carregando ativos...</span>
+</div>
+
+<!-- ===== Estado de erro ===== -->
+<div class="tbl-state" id="tbl-error-state" hidden>
+  <span class="tbl-state__title">Não foi possível carregar os ativos</span>
+  <span id="tbl-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="tbl-retry">Tentar novamente</button>
+</div>
+
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="tbl-content" hidden>
 
 <!-- ===== Bloco 1 — Filtros ===== -->
 <div class="page-section card">
@@ -152,11 +213,6 @@
         <label class="form-label" for="flt-tipo">Tipo / Categoria</label>
         <select class="select" id="flt-tipo">
           <option value="">Todos</option>
-          <option value="Fibra">Fibra</option>
-          <option value="Hidráulico">Hidráulico</option>
-          <option value="Energia">Energia</option>
-          <option value="Sinalização">Sinalização</option>
-          <option value="Fibra/Comun.">Fibra/Comun.</option>
         </select>
       </div>
       <div>
@@ -194,10 +250,6 @@
         <label class="form-label" for="flt-status">Status</label>
         <select class="select" id="flt-status">
           <option value="">Todos</option>
-          <option value="Online">Online</option>
-          <option value="Parcial">Parcial</option>
-          <option value="Alerta">Alerta</option>
-          <option value="Offline">Offline</option>
         </select>
       </div>
     </div>
@@ -242,7 +294,7 @@
         </tr>
       </thead>
       <tbody id="ativos-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
+        <!-- Linhas renderizadas via JS a partir dos dados da API -->
       </tbody>
     </table>
     <div class="table-empty" id="table-empty" hidden>Nenhum ativo encontrado para os filtros aplicados.</div>
@@ -258,58 +310,119 @@
   </div>
 </div>
 
+</div>
+<!-- fim de #tbl-content -->
+
 <!-- ===== JS específico desta página ===== -->
 <script>
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos 8 ativos ===== */
-  var ATIVOS = [
-    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', codigo: 'FB-EBL-01', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 2, nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', codigo: 'HID-BMB-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 3, nome: 'Sistemas Elétricos', tipo: 'Energia', codigo: 'ENE-SE-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 4, nome: 'Grupo Gerador', tipo: 'Energia', codigo: 'ENE-GG-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 5, nome: 'Sistemas Elétricos', tipo: 'Energia', codigo: 'ENE-SE-BRA', local: 'CCO Brás', tipoLocal: 'CCO', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 6, nome: 'Monitoramento CTC', tipo: 'Sinalização', codigo: 'SIN-CTC-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 7, nome: 'Monitoramento AMV', tipo: 'Sinalização', codigo: 'SIN-AMV-01', local: 'Brás — Linha 10', tipoLocal: 'Estação', linha: 'L10', responsavel: 'GOT/CMA', horario: '06-22h', status: 'Online', valor: 'OK', falhas: 0 },
-    { id: 8, nome: 'STO L10', tipo: 'Fibra/Comun.', codigo: 'FB-STO-L10', local: 'Linha 10', tipoLocal: 'Trecho', linha: 'L10', responsavel: 'GOT/CMA', horario: '24h', status: 'Online', valor: 'OK', falhas: 0 }
-  ];
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var CAT_CLASS = {
-    'Fibra': 'cat-fibra',
-    'Hidráulico': 'cat-hidraulico',
-    'Energia': 'cat-energia',
-    'Sinalização': 'cat-sinalizacao',
-    'Fibra/Comun.': 'cat-fibra-com'
+  var STATUS_CLASS = {
+    Online: 'status-ok',
+    Alerta: 'status-alert',
+    Critico: 'status-crit',
+    Offline: 'status-offline',
+    Parcial: 'status-parcial'
   };
 
-  var state = { filtered: ATIVOS.slice(), page: 1, perPage: 10 };
+  /* Heurística para derivar "Tipo de Local" a partir do nome da localidade —
+     a API não expõe esse campo, só localidade_nome. Mantido apenas para o
+     filtro "Tipo de Local" continuar funcional com dados reais. */
+  function deriveTipoLocal(localidadeNome) {
+    var n = (localidadeNome || '').toLowerCase();
+    if (n.indexOf('cco') !== -1) return 'CCO';
+    if (n.indexOf('sala') !== -1) return 'Sala Técnica';
+    if (n.indexOf('est') !== -1) return 'Estação';
+    return 'Trecho';
+  }
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('tbl-loading');
+  var elErrorState = document.getElementById('tbl-error-state');
+  var elErrorMessage = document.getElementById('tbl-error-message');
+  var elContent = document.getElementById('tbl-content');
+  var elRetry = document.getElementById('tbl-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  var state = { filtered: [], page: 1, perPage: 10 };
+  var dropdownsPopulados = false;
 
   var tbody = document.getElementById('ativos-tbody');
   var emptyEl = document.getElementById('table-empty');
   var countEl = document.getElementById('results-count');
   var pageInfoEl = document.getElementById('pagination-info');
 
-  function statusBadge(status) {
-    var map = { 'Online': 'status-ok', 'Parcial': 'status-ok', 'Alerta': 'status-alert', 'Offline': 'status-offline' };
-    var cls = map[status] || 'status-offline';
-    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + status + '</span>';
+  function statusBadge(statusNome) {
+    var cls = STATUS_CLASS[statusNome] || 'status-offline';
+    return '<span class="badge-status ' + cls + '"><span class="dot"></span>' + escapeHtml(statusNome) + '</span>';
+  }
+
+  /* ===== Popula os selects de Tipo/Status com valores reais (id/nome) a
+     partir da primeira busca sem filtros — só roda uma vez ===== */
+  function popularDropdowns(equipamentos) {
+    var tipoSelect = document.getElementById('flt-tipo');
+    var statusSelect = document.getElementById('flt-status');
+
+    var tiposVistos = {};
+    var tipoOpts = ['<option value="">Todos</option>'];
+    var statusVistos = {};
+    var statusOpts = ['<option value="">Todos</option>'];
+
+    equipamentos.forEach(function (eq) {
+      if (!tiposVistos[eq.tipo_id]) {
+        tiposVistos[eq.tipo_id] = true;
+        tipoOpts.push('<option value="' + eq.tipo_id + '">' + escapeHtml(eq.tipo_nome) + '</option>');
+      }
+      if (!statusVistos[eq.status_id]) {
+        statusVistos[eq.status_id] = true;
+        statusOpts.push('<option value="' + eq.status_id + '">' + escapeHtml(eq.status_nome) + '</option>');
+      }
+    });
+
+    tipoSelect.innerHTML = tipoOpts.join('');
+    statusSelect.innerHTML = statusOpts.join('');
+    dropdownsPopulados = true;
   }
 
   function render() {
     var start = (state.page - 1) * state.perPage;
     var pageItems = state.filtered.slice(start, start + state.perPage);
 
-    tbody.innerHTML = pageItems.map(function (a) {
+    tbody.innerHTML = pageItems.map(function (eq) {
       return '<tr>' +
-        '<td class="hi">' + a.nome + '</td>' +
-        '<td><span class="cat ' + (CAT_CLASS[a.tipo] || '') + '">' + a.tipo + '</span></td>' +
-        '<td>' + a.local + '</td>' +
-        '<td>' + a.responsavel + '</td>' +
-        '<td>' + a.horario + '</td>' +
-        '<td>' + statusBadge(a.status) + '</td>' +
-        '<td class="td-mono">' + a.valor + '</td>' +
-        '<td class="td-mono">' + a.falhas + '</td>' +
+        '<td class="hi">' + escapeHtml(eq.nome) + '</td>' +
+        '<td><span class="cat" style="background:' + eq.tipo_cor + '29;color:' + eq.tipo_cor + '">' + escapeHtml(eq.tipo_nome) + '</span></td>' +
+        '<td>' + escapeHtml(eq.localidade_nome) + '</td>' +
+        '<td>' + escapeHtml(eq.responsavel || '--') + '</td>' +
+        '<td>' + escapeHtml(eq.horario_op || '--') + '</td>' +
+        '<td>' + statusBadge(eq.status_nome) + '</td>' +
+        '<td class="td-mono">' + escapeHtml(eq.valor_atual || '--') + '</td>' +
+        '<td class="td-mono">--</td>' +
         '</tr>';
     }).join('');
 
@@ -325,31 +438,45 @@
     document.getElementById('pg-next').disabled = state.page >= totalPages;
   }
 
-  /* ===== Filtros ===== */
-  function applyFilters() {
-    var id = document.getElementById('flt-id').value.trim();
-    var tipo = document.getElementById('flt-tipo').value;
+  /* ===== Carrega da API (tipo_id/status_id via query) e aplica os demais
+     filtros client-side (sem correspondente na API) sobre o resultado ===== */
+  function carregar() {
+    mostrarLoading();
+
+    var idFiltro = document.getElementById('flt-id').value.trim();
+    var tipoId = document.getElementById('flt-tipo').value;
     var codigo = document.getElementById('flt-codigo').value.trim().toLowerCase();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
-    var linha = document.getElementById('flt-linha').value;
     var tipoLocal = document.getElementById('flt-tipolocal').value;
     var local = document.getElementById('flt-local').value.trim().toLowerCase();
-    var status = document.getElementById('flt-status').value;
+    var statusId = document.getElementById('flt-status').value;
 
-    state.filtered = ATIVOS.filter(function (a) {
-      if (id && String(a.id) !== id) return false;
-      if (tipo && a.tipo !== tipo) return false;
-      if (codigo && a.codigo.toLowerCase().indexOf(codigo) === -1) return false;
-      if (nome && a.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (linha && a.linha !== linha) return false;
-      if (tipoLocal && a.tipoLocal !== tipoLocal) return false;
-      if (local && a.local.toLowerCase().indexOf(local) === -1) return false;
-      if (status && a.status !== status) return false;
-      return true;
-    });
+    var filtros = {};
+    if (tipoId) filtros.tipo_id = tipoId;
+    if (statusId) filtros.status_id = statusId;
 
-    state.page = 1;
-    render();
+    window.CMA.api.getEquipamentos(filtros)
+      .then(function (equipamentos) {
+        if (!dropdownsPopulados && Object.keys(filtros).length === 0) {
+          popularDropdowns(equipamentos);
+        }
+
+        state.filtered = equipamentos.filter(function (eq) {
+          if (idFiltro && String(eq.id) !== idFiltro) return false;
+          if (codigo && eq.codigo.toLowerCase().indexOf(codigo) === -1) return false;
+          if (nome && eq.nome.toLowerCase().indexOf(nome) === -1) return false;
+          if (tipoLocal && deriveTipoLocal(eq.localidade_nome) !== tipoLocal) return false;
+          if (local && eq.localidade_nome.toLowerCase().indexOf(local) === -1) return false;
+          return true;
+        });
+
+        state.page = 1;
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
   }
 
   function clearFilters() {
@@ -359,12 +486,11 @@
     ['flt-tipo', 'flt-linha', 'flt-tipolocal', 'flt-status'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
-    state.filtered = ATIVOS.slice();
-    state.page = 1;
-    render();
+    carregar();
   }
 
-  document.getElementById('btn-aplicar').addEventListener('click', applyFilters);
+  if (elRetry) elRetry.addEventListener('click', carregar);
+  document.getElementById('btn-aplicar').addEventListener('click', carregar);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
 
   /* ===== Linhas por página ===== */
@@ -383,6 +509,6 @@
     if (state.page < totalPages) { state.page++; render(); }
   });
 
-  render();
+  carregar();
 })();
 </script>

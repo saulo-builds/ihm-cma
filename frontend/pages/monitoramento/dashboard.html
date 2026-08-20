@@ -232,234 +232,229 @@
       width: 100%;
     }
   }
+
+  /* Badge de status "Parcial" — não existe em badge.css (só ok/alert/crit/offline) */
+  .badge-status.status-parcial {
+    background: var(--parcial-lo);
+    color: var(--parcial-hi);
+    border: 1px solid var(--parcial);
+  }
+  .badge-status.status-parcial .dot {
+    background: var(--parcial-hi);
+  }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .dash-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .dash-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .dash-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: dash-spin 0.8s linear infinite;
+  }
+
+  @keyframes dash-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
-<!-- ===== Bloco 1 — Banner de maturidade parcial ===== -->
-<div class="dash-section dash-banner" id="dash-banner">
-  <span class="dash-banner__icon" aria-hidden="true">⚙️</span>
-  <p class="dash-banner__text">
-    2 sistemas com maturidade parcial: <strong>STO L10</strong> (Linha 10) e
-    <strong>Mon. Fibra Ebilock Luz L10</strong> (Sala Técnica LUZ) — implantação em andamento.
-  </p>
-  <button type="button" class="dash-banner__close" id="dash-banner-close" aria-label="Fechar aviso">✕</button>
+<!-- ===== Estado de carregamento ===== -->
+<div class="dash-state" id="dash-loading">
+  <div class="dash-spinner" aria-hidden="true"></div>
+  <span>Carregando dados do dashboard...</span>
 </div>
 
-<!-- ===== Bloco 2 — KPIs ===== -->
-<div class="dash-section dash-kpi-grid">
-  <div class="kpi-card kpi-ok">
-    <div class="kpi-card__label">Ativos Online</div>
-    <div class="kpi-card__value">08</div>
-    <div class="kpi-card__sub">de 8 monitorados</div>
-    <span class="kpi-card__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
-      </svg>
-    </span>
-  </div>
-
-  <div class="kpi-card kpi-parcial">
-    <div class="kpi-card__label">Maturidade Parcial</div>
-    <div class="kpi-card__value">02</div>
-    <div class="kpi-card__sub">implantação em andamento</div>
-    <span class="kpi-card__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-    </span>
-  </div>
-
-  <div class="kpi-card kpi-crit">
-    <div class="kpi-card__label">Offline / Crítico</div>
-    <div class="kpi-card__value">00</div>
-    <div class="kpi-card__sub">nenhuma falha ativa</div>
-    <span class="kpi-card__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-    </span>
-  </div>
-
-  <div class="kpi-card kpi-neutral">
-    <div class="kpi-card__label">Total Monitorados</div>
-    <div class="kpi-card__value">08</div>
-    <div class="kpi-card__sub">ativos cadastrados</div>
-    <span class="kpi-card__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"></line>
-        <line x1="12" y1="20" x2="12" y2="4"></line>
-        <line x1="6" y1="20" x2="6" y2="14"></line>
-      </svg>
-    </span>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="dash-state" id="dash-error-state" hidden>
+  <span class="dash-state__title">Não foi possível carregar o dashboard</span>
+  <span id="dash-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="dash-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Bloco 3 — Gráficos ===== -->
-<div class="dash-section dash-charts-grid">
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="dash-content" hidden>
 
-  <!-- Gráfico A — Donut MDA Online vs Offline -->
-  <div class="card">
+  <!-- ===== Bloco 1 — Banner de maturidade parcial ===== -->
+  <div class="dash-section dash-banner" id="dash-banner" hidden>
+    <span class="dash-banner__icon" aria-hidden="true">⚙️</span>
+    <p class="dash-banner__text" id="dash-banner-text"></p>
+    <button type="button" class="dash-banner__close" id="dash-banner-close" aria-label="Fechar aviso">✕</button>
+  </div>
+
+  <!-- ===== Bloco 2 — KPIs ===== -->
+  <div class="dash-section dash-kpi-grid">
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-card__label">Ativos Online</div>
+      <div class="kpi-card__value" id="kpi-online">--</div>
+      <div class="kpi-card__sub" id="kpi-online-sub">de -- monitorados</div>
+      <span class="kpi-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
+        </svg>
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-parcial">
+      <div class="kpi-card__label">Maturidade Parcial</div>
+      <div class="kpi-card__value" id="kpi-parcial">--</div>
+      <div class="kpi-card__sub">implantação em andamento</div>
+      <span class="kpi-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-crit">
+      <div class="kpi-card__label">Offline / Crítico</div>
+      <div class="kpi-card__value" id="kpi-critoff">--</div>
+      <div class="kpi-card__sub" id="kpi-critoff-sub">nenhuma falha ativa</div>
+      <span class="kpi-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-neutral">
+      <div class="kpi-card__label">Total Monitorados</div>
+      <div class="kpi-card__value" id="kpi-total">--</div>
+      <div class="kpi-card__sub">ativos cadastrados</div>
+      <span class="kpi-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== Bloco 3 — Gráficos ===== -->
+  <div class="dash-section dash-charts-grid">
+
+    <!-- Gráfico A — Donut Online vs Offline -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Ativos Online vs Offline</div>
+          <div class="card-subtitle">Disponibilidade geral dos ativos</div>
+        </div>
+        <span class="badge-status status-ok" id="donut-pct-badge"><span class="dot"></span>--%</span>
+      </div>
+      <div class="card-body chart-card__body">
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-donut"></canvas>
+        </div>
+        <div class="chart-legend">
+          <span class="chart-legend__item">
+            <span class="chart-legend__dot" style="background: var(--ok-hi)"></span>
+            Online <span class="chart-legend__value" id="donut-online-val">--</span>
+          </span>
+          <span class="chart-legend__item">
+            <span class="chart-legend__dot" style="background: var(--crit-hi)"></span>
+            Offline <span class="chart-legend__value" id="donut-offline-val">--</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico B — Barras: Equipamentos Operante / Inoperante por categoria -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Equipamentos por Categoria</div>
+          <div class="card-subtitle">Operante vs. inoperante</div>
+        </div>
+      </div>
+      <div class="card-body chart-card__body">
+        <div class="chart-legend chart-legend--top">
+          <span class="chart-legend__item">
+            <span class="chart-legend__dot" style="background: var(--ok-hi)"></span>
+            Operante
+          </span>
+          <span class="chart-legend__item">
+            <span class="chart-legend__dot" style="background: var(--crit-hi)"></span>
+            Inoperante
+          </span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-grouped"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico C — Barras: Equipamentos por Status -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Equipamentos por Status</div>
+          <div class="card-subtitle">Online · Parcial · Alerta · Offline</div>
+        </div>
+      </div>
+      <div class="card-body chart-card__body">
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== Bloco 4 — Tabela de ativos ===== -->
+  <div class="dash-section card">
     <div class="card-header">
       <div>
-        <div class="card-title">MDA Online vs Offline</div>
-        <div class="card-subtitle">Disponibilidade geral dos ativos</div>
+        <div class="card-title">Ativos monitorados — Linha 10</div>
+        <div class="card-subtitle" id="dash-table-subtitle">-- ativos</div>
       </div>
-      <span class="badge-status status-ok"><span class="dot"></span>100%</span>
-    </div>
-    <div class="card-body chart-card__body">
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-donut"></canvas>
-      </div>
-      <div class="chart-legend">
-        <span class="chart-legend__item">
-          <span class="chart-legend__dot" style="background: var(--ok-hi)"></span>
-          Online <span class="chart-legend__value">8</span>
-        </span>
-        <span class="chart-legend__item">
-          <span class="chart-legend__dot" style="background: var(--crit-hi)"></span>
-          Offline <span class="chart-legend__value">0</span>
-        </span>
+      <div class="dash-table-toolbar">
+        <input type="search" class="input" id="dash-table-search" placeholder="Buscar por nome ou localização..." />
+        <button type="button" class="btn btn-ghost btn-sm">Filtros</button>
       </div>
     </div>
-  </div>
-
-  <!-- Gráfico B — Barras: Equipamentos Operante / Inoperante por categoria -->
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Equipamentos por Categoria</div>
-        <div class="card-subtitle">Operante vs. inoperante</div>
-      </div>
-    </div>
-    <div class="card-body chart-card__body">
-      <div class="chart-legend chart-legend--top">
-        <span class="chart-legend__item">
-          <span class="chart-legend__dot" style="background: var(--ok-hi)"></span>
-          Operante
-        </span>
-        <span class="chart-legend__item">
-          <span class="chart-legend__dot" style="background: var(--crit-hi)"></span>
-          Inoperante
-        </span>
-      </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-grouped"></canvas>
-      </div>
+    <div class="table-wrap">
+      <table class="table" id="dash-ativos-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Categoria</th>
+            <th>Localização</th>
+            <th>O que monitora</th>
+            <th>Status</th>
+            <th>Maturidade</th>
+          </tr>
+        </thead>
+        <tbody id="dash-ativos-tbody"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Gráfico C — Barras: Equipamentos por Status -->
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Equipamentos por Status</div>
-        <div class="card-subtitle">Online · Parcial · Alerta · Offline</div>
-      </div>
-    </div>
-    <div class="card-body chart-card__body">
-      <div class="chart-canvas-wrap">
-        <canvas id="chart-status"></canvas>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ===== Bloco 4 — Tabela de ativos ===== -->
-<div class="dash-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Ativos monitorados — Linha 10</div>
-      <div class="card-subtitle">8 ativos · ordenados por categoria</div>
-    </div>
-    <div class="dash-table-toolbar">
-      <input type="search" class="input" id="dash-table-search" placeholder="Buscar por nome ou localização..." />
-      <button type="button" class="btn btn-ghost btn-sm">Filtros</button>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <table class="table" id="dash-ativos-table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Categoria</th>
-          <th>Localização</th>
-          <th>O que monitora</th>
-          <th>Status</th>
-          <th>Maturidade</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="hi">Mon. Fibra Ebilock Luz L10</td>
-          <td><span class="cat cat-fibra">Fibra</span></td>
-          <td>Sala Técnica LUZ</td>
-          <td>Enlace de fibra óptica do sistema Ebilock</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-parcial">Parcial</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Sist. Acionamento de Bombas</td>
-          <td><span class="cat cat-hidraulico">Hidráulico</span></td>
-          <td>Est. Tamanduateí</td>
-          <td>Acionamento e nível do sistema de bombas de drenagem</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Sistemas Elétricos</td>
-          <td><span class="cat cat-energia">Energia</span></td>
-          <td>Est. Tamanduateí</td>
-          <td>Quadros e painéis de distribuição elétrica</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Grupo Gerador</td>
-          <td><span class="cat cat-energia">Energia</span></td>
-          <td>Est. Tamanduateí</td>
-          <td>Grupo motogerador de emergência</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Sistemas Elétricos</td>
-          <td><span class="cat cat-energia">Energia</span></td>
-          <td>CCO Brás</td>
-          <td>Quadros e painéis de distribuição elétrica</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Monitoramento CTC</td>
-          <td><span class="cat cat-sinalizacao">Sinalização</span></td>
-          <td>Est. Tamanduateí</td>
-          <td>Controle centralizado de tráfego (CTC)</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">Monitoramento AMV</td>
-          <td><span class="cat cat-sinalizacao">Sinalização</span></td>
-          <td>Brás — Linha 10</td>
-          <td>Aparelhos de mudança de via (AMV)</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-concluido">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="hi">STO L10</td>
-          <td><span class="cat cat-fibra-com">Fibra/Comun.</span></td>
-          <td>Linha 10</td>
-          <td>Sistema de transmissão óptica da Linha 10</td>
-          <td><span class="badge-status status-ok"><span class="dot"></span>Online</span></td>
-          <td><span class="badge-maturidade maturidade-parcial">Parcial</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 </div>
 
 <!-- ===== JS específico desta página ===== -->
@@ -473,24 +468,76 @@
     return rootStyle.getPropertyValue(name).trim();
   }
 
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
+
+  var STATUS_CLASS = {
+    Online: 'status-ok',
+    Alerta: 'status-alert',
+    Critico: 'status-crit',
+    Offline: 'status-offline',
+    Parcial: 'status-parcial'
+  };
+
+  var MATURIDADE_CLASS = {
+    Concluido: 'maturidade-concluido',
+    Parcial: 'maturidade-parcial',
+    Implantacao: 'maturidade-implantacao'
+  };
+
+  var MATURIDADE_LABEL = {
+    Concluido: 'Concluído',
+    Parcial: 'Parcial',
+    Implantacao: 'Implantação'
+  };
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('dash-loading');
+  var elErrorState = document.getElementById('dash-error-state');
+  var elErrorMessage = document.getElementById('dash-error-message');
+  var elContent = document.getElementById('dash-content');
+  var elRetry = document.getElementById('dash-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
+
   /* ===== Bloco 1 — fechar banner de maturidade parcial ===== */
   var banner = document.getElementById('dash-banner');
   var bannerClose = document.getElementById('dash-banner-close');
   if (banner && bannerClose) {
     bannerClose.addEventListener('click', function () {
-      banner.remove();
+      banner.hidden = true;
     });
   }
 
   /* ===== Bloco 4 — busca em tempo real na tabela (nome ou localização) ===== */
   var searchInput = document.getElementById('dash-table-search');
-  var tableRows = Array.prototype.slice.call(
-    document.querySelectorAll('#dash-ativos-table tbody tr')
-  );
   if (searchInput) {
     searchInput.addEventListener('input', function () {
       var q = searchInput.value.trim().toLowerCase();
-      tableRows.forEach(function (row) {
+      var rows = document.querySelectorAll('#dash-ativos-tbody tr');
+      rows.forEach(function (row) {
         var nome = (row.cells[0].textContent || '').toLowerCase();
         var local = (row.cells[2].textContent || '').toLowerCase();
         var match = !q || nome.indexOf(q) !== -1 || local.indexOf(q) !== -1;
@@ -499,7 +546,7 @@
     });
   }
 
-  /* ===== Bloco 3 — utilitário genérico de canvas responsivo (ResizeObserver) ===== */
+  /* ===== Utilitário genérico de canvas responsivo (ResizeObserver) — retorna função de rerender ===== */
   function bindResponsiveCanvas(canvas, draw) {
     var ctx = canvas.getContext('2d');
     var container = canvas.parentElement;
@@ -524,11 +571,12 @@
     } else {
       window.addEventListener('resize', render);
     }
+    return render;
   }
 
-  /* ===== Gráfico A — Donut: MDA Online vs Offline ===== */
+  /* ===== Gráfico A — Donut: Online vs Offline ===== */
   var donutData = [
-    { label: 'Online', value: 8, color: cssVar('--ok-hi') },
+    { label: 'Online', value: 0, color: cssVar('--ok-hi') },
     { label: 'Offline', value: 0, color: cssVar('--crit-hi') }
   ];
 
@@ -565,26 +613,27 @@
   }
 
   var donutCanvas = document.getElementById('chart-donut');
-  if (donutCanvas) bindResponsiveCanvas(donutCanvas, drawDonut);
+  var renderDonut = donutCanvas ? bindResponsiveCanvas(donutCanvas, drawDonut) : null;
 
   /* ===== Gráfico B — Barras agrupadas: Operante / Inoperante por categoria ===== */
-  var groupedData = {
-    categorias: ['Fibra', 'Hidráulico', 'Energia', 'Sinalização', 'Fibra/Comun.'],
-    operante: [2, 1, 3, 2, 1],
-    inoperante: [0, 0, 0, 0, 0]
-  };
+  var groupedData = { categorias: [], operante: [], inoperante: [] };
 
   function drawGroupedBars(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
     var padL = 24, padR = 8, padT = 10, padB = 28;
     var plotW = w - padL - padR;
     var plotH = h - padT - padB;
-    var yMax = 4;
     var okColor = cssVar('--ok-hi');
     var critColor = cssVar('--crit-hi');
     var gridColor = cssVar('--border');
     var textMd = cssVar('--text-md');
     var fontFamily = cssVar('--font');
+
+    var yMax = 1;
+    groupedData.operante.concat(groupedData.inoperante).forEach(function (v) {
+      if (v > yMax) yMax = v;
+    });
+    yMax = Math.ceil(yMax);
 
     /* Eixo Y + linhas de grade */
     ctx.textAlign = 'right';
@@ -603,7 +652,7 @@
     }
 
     /* Barras agrupadas por categoria */
-    var n = groupedData.categorias.length;
+    var n = groupedData.categorias.length || 1;
     var groupW = plotW / n;
     var barW = Math.min(16, groupW * 0.28);
     var gap = 4;
@@ -630,12 +679,12 @@
   }
 
   var groupedCanvas = document.getElementById('chart-grouped');
-  if (groupedCanvas) bindResponsiveCanvas(groupedCanvas, drawGroupedBars);
+  var renderGrouped = groupedCanvas ? bindResponsiveCanvas(groupedCanvas, drawGroupedBars) : null;
 
   /* ===== Gráfico C — Barras simples: Equipamentos por Status ===== */
   var statusData = [
-    { label: 'Online', value: 8, color: cssVar('--ok-hi') },
-    { label: 'Parcial', value: 2, color: cssVar('--parcial-hi') },
+    { label: 'Online', value: 0, color: cssVar('--ok-hi') },
+    { label: 'Parcial', value: 0, color: cssVar('--parcial-hi') },
     { label: 'Alerta', value: 0, color: cssVar('--alert-hi') },
     { label: 'Offline', value: 0, color: cssVar('--offline') }
   ];
@@ -645,13 +694,16 @@
     var padL = 24, padR = 8, padT = 10, padB = 26;
     var plotW = w - padL - padR;
     var plotH = h - padT - padB;
-    var yMax = 10;
-    var step = 2;
     var gridColor = cssVar('--border');
     var textMd = cssVar('--text-md');
     var textHi = cssVar('--text-hi');
     var fontFamily = cssVar('--font');
     var fontMono = cssVar('--font-mono');
+
+    var maxVal = 1;
+    statusData.forEach(function (d) { if (d.value > maxVal) maxVal = d.value; });
+    var yMax = Math.max(4, Math.ceil(maxVal * 1.25));
+    var step = Math.max(1, Math.ceil(yMax / 5));
 
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -694,6 +746,113 @@
   }
 
   var statusCanvas = document.getElementById('chart-status');
-  if (statusCanvas) bindResponsiveCanvas(statusCanvas, drawStatusBars);
+  var renderStatus = statusCanvas ? bindResponsiveCanvas(statusCanvas, drawStatusBars) : null;
+
+  /* ===== Renderização da tabela de ativos ===== */
+  function renderTabela(equipamentos) {
+    var tbody = document.getElementById('dash-ativos-tbody');
+    var subtitle = document.getElementById('dash-table-subtitle');
+    subtitle.textContent = equipamentos.length + (equipamentos.length === 1 ? ' ativo' : ' ativos');
+
+    tbody.innerHTML = equipamentos.map(function (eq) {
+      var statusClass = STATUS_CLASS[eq.status_nome] || 'status-offline';
+      var matClass = MATURIDADE_CLASS[eq.maturidade] || 'maturidade-implantacao';
+      var matLabel = MATURIDADE_LABEL[eq.maturidade] || eq.maturidade;
+      return (
+        '<tr>' +
+        '<td class="hi">' + escapeHtml(eq.nome) + '</td>' +
+        '<td><span class="cat" style="background:' + eq.tipo_cor + '29;color:' + eq.tipo_cor + '">' + escapeHtml(eq.tipo_nome) + '</span></td>' +
+        '<td>' + escapeHtml(eq.localidade_nome) + '</td>' +
+        '<td>' + escapeHtml(eq.descricao || '--') + '</td>' +
+        '<td><span class="badge-status ' + statusClass + '"><span class="dot"></span>' + escapeHtml(eq.status_nome) + '</span></td>' +
+        '<td><span class="badge-maturidade ' + matClass + '">' + escapeHtml(matLabel) + '</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  /* ===== Monta o banner de maturidade parcial a partir dos equipamentos reais ===== */
+  function renderBanner(equipamentos) {
+    var parciais = equipamentos.filter(function (eq) { return eq.maturidade === 'Parcial'; });
+    if (parciais.length === 0) {
+      banner.hidden = true;
+      return;
+    }
+    var partes = parciais.map(function (eq) {
+      return '<strong>' + escapeHtml(eq.nome) + '</strong> (' + escapeHtml(eq.localidade_nome) + ')';
+    });
+    document.getElementById('dash-banner-text').innerHTML =
+      parciais.length + (parciais.length === 1 ? ' sistema com maturidade parcial: ' : ' sistemas com maturidade parcial: ') +
+      partes.join(', ') + ' — implantação em andamento.';
+    banner.hidden = false;
+  }
+
+  /* ===== Orquestra o carregamento: dashboard agregado + lista de equipamentos ===== */
+  function carregar() {
+    mostrarLoading();
+    Promise.all([window.CMA.api.getDashboard(), window.CMA.api.getEquipamentos()])
+      .then(function (resultados) {
+        var dash = resultados[0];
+        var equipamentos = resultados[1];
+
+        // KPIs
+        document.getElementById('kpi-online').textContent = String(dash.online).padStart(2, '0');
+        document.getElementById('kpi-online-sub').textContent = 'de ' + dash.total + ' monitorados';
+        document.getElementById('kpi-parcial').textContent = String(dash.parcial).padStart(2, '0');
+        var critoff = dash.critico + dash.offline;
+        document.getElementById('kpi-critoff').textContent = String(critoff).padStart(2, '0');
+        document.getElementById('kpi-critoff-sub').textContent = critoff === 0 ? 'nenhuma falha ativa' : (critoff === 1 ? '1 falha ativa' : critoff + ' falhas ativas');
+        document.getElementById('kpi-total').textContent = String(dash.total).padStart(2, '0');
+
+        // Donut — online vs offline (tudo que não é online)
+        var offlineTotal = dash.total - dash.online;
+        donutData[0].value = dash.online;
+        donutData[1].value = offlineTotal;
+        var pct = dash.total > 0 ? Math.round((dash.online / dash.total) * 100) : 0;
+        document.getElementById('donut-online-val').textContent = dash.online;
+        document.getElementById('donut-offline-val').textContent = offlineTotal;
+        var pctBadge = document.getElementById('donut-pct-badge');
+        pctBadge.className = 'badge-status ' + (pct >= 90 ? 'status-ok' : pct >= 60 ? 'status-alert' : 'status-crit');
+        pctBadge.innerHTML = '<span class="dot"></span>' + pct + '%';
+        if (renderDonut) renderDonut();
+
+        // Barras por categoria — operante/inoperante calculado a partir dos equipamentos reais
+        var porTipo = {};
+        var ordemTipo = [];
+        equipamentos.forEach(function (eq) {
+          if (!porTipo[eq.tipo_nome]) {
+            porTipo[eq.tipo_nome] = { operante: 0, inoperante: 0 };
+            ordemTipo.push(eq.tipo_nome);
+          }
+          if (eq.status_nome === 'Online') {
+            porTipo[eq.tipo_nome].operante += 1;
+          } else {
+            porTipo[eq.tipo_nome].inoperante += 1;
+          }
+        });
+        groupedData.categorias = ordemTipo;
+        groupedData.operante = ordemTipo.map(function (t) { return porTipo[t].operante; });
+        groupedData.inoperante = ordemTipo.map(function (t) { return porTipo[t].inoperante; });
+        if (renderGrouped) renderGrouped();
+
+        // Barras por status — direto do dashboard agregado
+        statusData[0].value = dash.online;
+        statusData[1].value = dash.parcial;
+        statusData[2].value = dash.alerta;
+        statusData[3].value = dash.offline;
+        if (renderStatus) renderStatus();
+
+        // Banner + tabela
+        renderBanner(equipamentos);
+        renderTabela(equipamentos);
+
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

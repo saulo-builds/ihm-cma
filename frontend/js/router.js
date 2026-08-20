@@ -57,6 +57,12 @@ window.CMA = window.CMA || {};
   }
 
   async function navigate(path, { pushHistory = true } = {}) {
+    // /login é um documento HTML autônomo (fora do shell/router) — redireciona de verdade
+    if (path === '/login') {
+      window.location.href = '/login.html';
+      return;
+    }
+
     const route = ROUTES[path] || ROUTES['/'];
     const resolvedPath = ROUTES[path] ? path : '/';
     const main = document.getElementById('content');

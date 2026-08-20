@@ -38,7 +38,7 @@
   /* ===== Bloco 1 — Card de filtros ===== */
   .filters-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
 
@@ -354,6 +354,41 @@
     color: var(--text-md);
   }
 
+  /* ===== Estados de carregamento e erro ===== */
+  .page-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .page-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .page-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: page-spin 0.8s linear infinite;
+  }
+
+  @keyframes page-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
   /* ===== Responsivo ===== */
   @media (max-width: 900px) {
     .filters-grid {
@@ -369,75 +404,89 @@
   }
 </style>
 
-<!-- ===== Cabeçalho de página ===== -->
-<div class="page-header">
-  <div class="page-header__eyebrow">Cadastro</div>
-  <h1 class="page-header__title">Notificação</h1>
-  <p class="page-header__desc">Grupos de notificação e seus membros</p>
+<!-- ===== Estado de carregamento ===== -->
+<div class="page-state" id="page-loading">
+  <div class="page-spinner" aria-hidden="true"></div>
+  <span>Carregando grupos de notificação...</span>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-id">ID</label>
-        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-membro">Membro</label>
-        <input type="text" class="input" id="flt-membro" placeholder="Buscar por membro..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-ativo">Ativo</label>
-        <select class="select" id="flt-ativo">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="page-state" id="page-error-state" hidden>
+  <span class="page-state__title">Não foi possível carregar os grupos de notificação</span>
+  <span id="page-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="page-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">2 registros encontrados</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="page-content" hidden>
+
+  <!-- ===== Cabeçalho de página ===== -->
+  <div class="page-header">
+    <div class="page-header__eyebrow">Cadastro</div>
+    <h1 class="page-header__title">Notificação</h1>
+    <p class="page-header__desc">Grupos de notificação e seus membros</p>
   </div>
 
-  <div class="table-wrap">
-    <table class="table" id="notif-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Qtd. Usuários</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="notif-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum grupo de notificação encontrado para os filtros aplicados.</div>
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-id">ID</label>
+          <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-ativo">Ativo</label>
+          <select class="select" id="flt-ativo">
+            <option value="">Todos</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">0 registros encontrados</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="notif-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Qtd. Usuários</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="notif-tbody">
+          <!-- Linhas renderizadas via JS a partir da resposta da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum grupo de notificação encontrado para os filtros aplicados.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== Modal Incluir / Alterar ===== -->
@@ -452,7 +501,7 @@
         <label class="form-label" for="form-nome">Nome</label>
         <input type="text" class="input" id="form-nome" placeholder="Ex.: GOT-CMA Operação" />
       </div>
-      <div class="form-field">
+      <div class="form-field" id="form-ativo-field">
         <label class="form-label">Ativo</label>
         <label class="toggle">
           <input type="checkbox" id="form-ativo" checked />
@@ -511,6 +560,10 @@
       <button type="button" class="btn btn-primary btn-sm" id="btn-add-membro">Adicionar membro</button>
     </div>
     <div class="member-search-results" id="membro-busca-results" hidden></div>
+    <div class="member-empty" id="membro-erro" hidden>
+      <span id="membro-erro-msg"></span><br />
+      <button type="button" class="btn btn-ghost btn-sm" id="membro-retry">Tentar novamente</button>
+    </div>
     <ul class="member-list" id="membro-list"></ul>
   </div>
   <div class="modal-footer">
@@ -542,37 +595,54 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos grupos de notificação ===== */
-  var GRUPOS = [
-    {
-      id: 1, nome: 'GOT-CMA Operação', ativo: true,
-      membros: [
-        { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
-        { nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br' },
-        { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
-      ]
-    },
-    {
-      id: 2, nome: 'GOT-CMA Manutenção', ativo: true,
-      membros: [
-        { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
-        { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
-      ]
-    }
-  ];
+  /* ===== Utilitários ===== */
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  /* Diretório simulado de usuários disponíveis para adicionar como membro */
-  var DIRETORIO = [
-    { nome: 'Saulo Lima', email: 'saulo.lima@cptm.sp.gov.br' },
-    { nome: 'Wellingto Rios', email: 'wellingto.rios@cptm.sp.gov.br' },
-    { nome: 'Fernando Vieira', email: 'fernando.vieira@cptm.sp.gov.br' }
-  ];
+  function initials(nome) {
+    var parts = (nome || '').trim().split(/\s+/);
+    return (((parts[0] || '')[0] || '') + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
 
-  var nextId = GRUPOS.length + 1;
-  var state = { filtered: GRUPOS.slice() };
+  /* ===== Estado geral (dados vêm da API) ===== */
+  var GRUPOS = [];
+  var USUARIOS = [];
+  var state = { filtered: [] };
   var editingId = null;
   var deletingId = null;
   var membrosTargetId = null;
+  var membrosAtual = [];
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('page-loading');
+  var elErrorState = document.getElementById('page-error-state');
+  var elErrorMessage = document.getElementById('page-error-message');
+  var elContent = document.getElementById('page-content');
+  var elRetry = document.getElementById('page-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   var tbody = document.getElementById('notif-tbody');
   var emptyEl = document.getElementById('table-empty');
@@ -585,18 +655,15 @@
     return null;
   }
 
-  function initials(nome) {
-    var parts = nome.trim().split(/\s+/);
-    return ((parts[0] || '')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
-  }
-
   function render() {
     tbody.innerHTML = state.filtered.map(function (g) {
+      var ativo = g.ativo === undefined ? true : !!g.ativo;
+      var qtd = g.total_membros != null ? g.total_membros : 0;
       return '<tr>' +
         '<td class="td-mono">' + g.id + '</td>' +
-        '<td class="hi">' + g.nome + '</td>' +
-        '<td class="td-mono">' + g.membros.length + '</td>' +
-        '<td>' + (g.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td class="hi">' + escapeHtml(g.nome) + '</td>' +
+        '<td class="td-mono">' + qtd + '</td>' +
+        '<td>' + (ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + g.id + '">Detalhar</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + g.id + '">Alterar</button>' +
@@ -611,19 +678,18 @@
     countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
   }
 
-  /* ===== Filtros ===== */
+  /* ===== Filtros (client-side — a API não expõe parâmetros de busca para grupos) ===== */
   function applyFilters() {
     var id = document.getElementById('flt-id').value.trim();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
-    var membro = document.getElementById('flt-membro').value.trim().toLowerCase();
-    var ativo = document.getElementById('flt-ativo').value;
+    var ativoFiltro = document.getElementById('flt-ativo').value;
 
     state.filtered = GRUPOS.filter(function (g) {
       if (id && String(g.id) !== id) return false;
-      if (nome && g.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (membro && !g.membros.some(function (m) { return m.nome.toLowerCase().indexOf(membro) !== -1; })) return false;
-      if (ativo === 'Ativo' && !g.ativo) return false;
-      if (ativo === 'Inativo' && g.ativo) return false;
+      if (nome && (g.nome || '').toLowerCase().indexOf(nome) === -1) return false;
+      var ativo = g.ativo === undefined ? true : !!g.ativo;
+      if (ativoFiltro === 'Ativo' && !ativo) return false;
+      if (ativoFiltro === 'Inativo' && ativo) return false;
       return true;
     });
     render();
@@ -632,7 +698,6 @@
   function clearFilters() {
     document.getElementById('flt-id').value = '';
     document.getElementById('flt-nome').value = '';
-    document.getElementById('flt-membro').value = '';
     document.getElementById('flt-ativo').value = '';
     state.filtered = GRUPOS.slice();
     render();
@@ -641,10 +706,14 @@
   document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
 
-  /* ===== Modal Incluir/Alterar ===== */
+  /* ===== Modal Incluir/Alterar =====
+     criarGrupoNotificacao só aceita {nome}; atualizarGrupoNotificacao aceita {nome?, ativo?}.
+     Por isso o campo Ativo só aparece ao alterar um grupo existente. */
   var modalForm = document.getElementById('modal-form');
   var formAtivo = document.getElementById('form-ativo');
   var formAtivoLabel = document.getElementById('form-ativo-label');
+  var formAtivoField = document.getElementById('form-ativo-field');
+  var btnSalvar = document.getElementById('btn-salvar-form');
 
   formAtivo.addEventListener('change', function () {
     formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
@@ -654,8 +723,7 @@
     editingId = null;
     document.getElementById('modal-form-title').textContent = 'Incluir Grupo de Notificação';
     document.getElementById('form-nome').value = '';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
+    formAtivoField.hidden = true;
     modalForm.showModal();
   }
 
@@ -664,32 +732,43 @@
     if (!g) return;
     editingId = id;
     document.getElementById('modal-form-title').textContent = 'Alterar Grupo de Notificação';
-    document.getElementById('form-nome').value = g.nome;
-    formAtivo.checked = g.ativo;
-    formAtivoLabel.textContent = g.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-nome').value = g.nome || '';
+    var ativo = g.ativo === undefined ? true : !!g.ativo;
+    formAtivo.checked = ativo;
+    formAtivoLabel.textContent = ativo ? 'Ativo' : 'Inativo';
+    formAtivoField.hidden = false;
     modalForm.showModal();
   }
 
   document.getElementById('btn-incluir').addEventListener('click', openIncluir);
 
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvar.addEventListener('click', function () {
     var nome = document.getElementById('form-nome').value.trim();
     if (!nome) {
       alert('Preencha o Nome antes de salvar.');
       return;
     }
-    var ativo = formAtivo.checked;
 
+    var dados, promise;
     if (editingId) {
-      var g = findById(editingId);
-      g.nome = nome;
-      g.ativo = ativo;
+      dados = { nome: nome, ativo: formAtivo.checked };
+      promise = window.CMA.api.atualizarGrupoNotificacao(editingId, dados);
     } else {
-      GRUPOS.push({ id: nextId++, nome: nome, ativo: ativo, membros: [] });
+      dados = { nome: nome };
+      promise = window.CMA.api.criarGrupoNotificacao(dados);
     }
-    modalForm.close();
-    state.filtered = GRUPOS.slice();
-    render();
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+    promise.then(function () {
+      modalForm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao salvar grupo: ' + err.message);
+    }).then(function () {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = 'Salvar';
+    });
   });
 
   /* ===== Modal Detalhar ===== */
@@ -698,10 +777,11 @@
   function openDetalhar(id) {
     var g = findById(id);
     if (!g) return;
+    var ativo = g.ativo === undefined ? true : !!g.ativo;
     document.getElementById('det-id').textContent = g.id;
-    document.getElementById('det-ativo').textContent = g.ativo ? 'Sim' : 'Não';
-    document.getElementById('det-nome').textContent = g.nome;
-    document.getElementById('det-qtd').textContent = g.membros.length;
+    document.getElementById('det-ativo').textContent = ativo ? 'Sim' : 'Não';
+    document.getElementById('det-nome').textContent = g.nome || '--';
+    document.getElementById('det-qtd').textContent = g.total_membros != null ? g.total_membros : 0;
     modalDetail.showModal();
   }
 
@@ -710,25 +790,47 @@
   var membroBusca = document.getElementById('membro-busca');
   var membroBuscaResults = document.getElementById('membro-busca-results');
   var membroList = document.getElementById('membro-list');
+  var membroErro = document.getElementById('membro-erro');
+  var membroErroMsg = document.getElementById('membro-erro-msg');
+  var membroRetry = document.getElementById('membro-retry');
 
   function renderMembros() {
-    var g = findById(membrosTargetId);
-    if (!g) return;
-    if (g.membros.length === 0) {
+    if (membrosAtual.length === 0) {
       membroList.innerHTML = '<li class="member-empty">Nenhum membro cadastrado neste grupo</li>';
       return;
     }
-    membroList.innerHTML = g.membros.map(function (m, idx) {
+    membroList.innerHTML = membrosAtual.map(function (m) {
       return '<li class="member-item">' +
-        '<span class="member-item__avatar">' + initials(m.nome) + '</span>' +
+        '<span class="member-item__avatar">' + escapeHtml(initials(m.nome)) + '</span>' +
         '<span class="member-item__body">' +
-          '<span class="member-item__name">' + m.nome + '</span><br/>' +
-          '<span class="member-item__email">' + m.email + '</span>' +
+          '<span class="member-item__name">' + escapeHtml(m.nome) + '</span><br/>' +
+          '<span class="member-item__email">' + escapeHtml(m.email) + '</span>' +
         '</span>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-remove-idx="' + idx + '">Remover</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-remove-id="' + m.usuario_id + '">Remover</button>' +
         '</li>';
     }).join('');
   }
+
+  /* Recarrega a lista de membros do grupo aberto e sincroniza a contagem na tabela */
+  function carregarMembros() {
+    membroList.innerHTML = '<li class="member-empty">Carregando membros...</li>';
+    membroErro.hidden = true;
+    return window.CMA.api.getMembrosGrupo(membrosTargetId).then(function (lista) {
+      membrosAtual = lista || [];
+      renderMembros();
+      var g = findById(membrosTargetId);
+      if (g) {
+        g.total_membros = membrosAtual.length;
+        render();
+      }
+    }).catch(function (err) {
+      membroList.innerHTML = '';
+      membroErro.hidden = false;
+      membroErroMsg.textContent = err.message;
+    });
+  }
+
+  membroRetry.addEventListener('click', carregarMembros);
 
   function openMembros(id) {
     var g = findById(id);
@@ -738,22 +840,21 @@
     membroBusca.value = '';
     membroBuscaResults.hidden = true;
     membroBuscaResults.innerHTML = '';
-    renderMembros();
     modalMembros.showModal();
+    carregarMembros();
   }
 
   membroBusca.addEventListener('input', function () {
     var termo = membroBusca.value.trim().toLowerCase();
-    var g = findById(membrosTargetId);
-    if (!termo || !g) {
+    if (!termo) {
       membroBuscaResults.hidden = true;
       membroBuscaResults.innerHTML = '';
       return;
     }
-    var jaMembro = g.membros.map(function (m) { return m.email; });
-    var resultados = DIRETORIO.filter(function (u) {
-      return jaMembro.indexOf(u.email) === -1 &&
-        (u.nome.toLowerCase().indexOf(termo) !== -1 || u.email.toLowerCase().indexOf(termo) !== -1);
+    var jaMembro = membrosAtual.map(function (m) { return m.usuario_id; });
+    var resultados = USUARIOS.filter(function (u) {
+      return jaMembro.indexOf(u.id) === -1 &&
+        ((u.nome || '').toLowerCase().indexOf(termo) !== -1 || (u.email || '').toLowerCase().indexOf(termo) !== -1);
     });
     if (resultados.length === 0) {
       membroBuscaResults.hidden = false;
@@ -762,24 +863,27 @@
     }
     membroBuscaResults.hidden = false;
     membroBuscaResults.innerHTML = resultados.map(function (u) {
-      return '<div class="member-search-item"><span>' + u.nome + ' — ' + u.email + '</span>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-pick-email="' + u.email + '">Adicionar</button></div>';
+      return '<div class="member-search-item"><span>' + escapeHtml(u.nome) + ' — ' + escapeHtml(u.email) + '</span>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-pick-id="' + u.id + '">Adicionar</button></div>';
     }).join('');
   });
 
   membroBuscaResults.addEventListener('click', function (evt) {
-    var btn = evt.target.closest('[data-pick-email]');
+    var btn = evt.target.closest('[data-pick-id]');
     if (!btn) return;
-    var g = findById(membrosTargetId);
-    if (!g) return;
-    var email = btn.getAttribute('data-pick-email');
-    var usuario = DIRETORIO.filter(function (u) { return u.email === email; })[0];
-    if (usuario) g.membros.push(usuario);
-    membroBusca.value = '';
-    membroBuscaResults.hidden = true;
-    membroBuscaResults.innerHTML = '';
-    renderMembros();
-    render();
+    var usuarioId = parseInt(btn.getAttribute('data-pick-id'), 10);
+    btn.disabled = true;
+    btn.textContent = 'Adicionando...';
+    window.CMA.api.adicionarMembroGrupo(membrosTargetId, usuarioId).then(function () {
+      membroBusca.value = '';
+      membroBuscaResults.hidden = true;
+      membroBuscaResults.innerHTML = '';
+      return carregarMembros();
+    }).catch(function (err) {
+      alert('Erro ao adicionar membro: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Adicionar';
+    });
   });
 
   document.getElementById('btn-add-membro').addEventListener('click', function () {
@@ -787,18 +891,23 @@
   });
 
   membroList.addEventListener('click', function (evt) {
-    var btn = evt.target.closest('[data-remove-idx]');
+    var btn = evt.target.closest('[data-remove-id]');
     if (!btn) return;
-    var g = findById(membrosTargetId);
-    if (!g) return;
-    var idx = parseInt(btn.getAttribute('data-remove-idx'), 10);
-    g.membros.splice(idx, 1);
-    renderMembros();
-    render();
+    var usuarioId = parseInt(btn.getAttribute('data-remove-id'), 10);
+    btn.disabled = true;
+    btn.textContent = 'Removendo...';
+    window.CMA.api.removerMembroGrupo(membrosTargetId, usuarioId).then(function () {
+      return carregarMembros();
+    }).catch(function (err) {
+      alert('Erro ao remover membro: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Remover';
+    });
   });
 
   /* ===== Modal de confirmação de exclusão ===== */
   var modalConfirm = document.getElementById('modal-confirm');
+  var btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
 
   function openExcluir(id) {
     var g = findById(id);
@@ -808,14 +917,19 @@
     modalConfirm.showModal();
   }
 
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+  btnConfirmarExclusao.addEventListener('click', function () {
     if (deletingId == null) return;
-    var idx = GRUPOS.findIndex(function (g) { return g.id === deletingId; });
-    if (idx !== -1) GRUPOS.splice(idx, 1);
-    deletingId = null;
-    modalConfirm.close();
-    state.filtered = GRUPOS.slice();
-    render();
+    var id = deletingId;
+    btnConfirmarExclusao.disabled = true;
+    window.CMA.api.excluirGrupoNotificacao(id).then(function () {
+      deletingId = null;
+      modalConfirm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao excluir grupo: ' + err.message);
+    }).then(function () {
+      btnConfirmarExclusao.disabled = false;
+    });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -838,6 +952,22 @@
     });
   });
 
-  render();
+  /* ===== Orquestra o carregamento: grupos + usuários (para o picker de membros) ===== */
+  function carregar() {
+    mostrarLoading();
+    return Promise.all([window.CMA.api.getGruposNotificacao(), window.CMA.api.getUsuarios()])
+      .then(function (resultados) {
+        GRUPOS = resultados[0] || [];
+        USUARIOS = resultados[1] || [];
+        state.filtered = GRUPOS.slice();
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

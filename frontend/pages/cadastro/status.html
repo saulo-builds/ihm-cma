@@ -38,7 +38,7 @@
   /* ===== Bloco 1 — Card de filtros ===== */
   .filters-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 
@@ -91,60 +91,6 @@
     border-radius: 50%;
     border: 1px solid var(--border-hi);
     flex-shrink: 0;
-  }
-
-  /* ===== Toggle Ativo/Inativo ===== */
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-track {
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--border-hi);
-    border-radius: 999px;
-    position: relative;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--text-md);
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: color-mix(in srgb, var(--ok) 30%, transparent);
-    border-color: var(--ok);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    transform: translateX(18px);
-    background: var(--ok-hi);
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: var(--text-hi);
   }
 
   /* ===== Campo de cor (color picker) ===== */
@@ -306,13 +252,42 @@
     color: var(--text-md);
   }
 
-  /* ===== Responsivo ===== */
-  @media (max-width: 900px) {
-    .filters-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  /* ===== Estados de carregamento e erro ===== */
+  .page-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
   }
 
+  .page-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .page-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: page-spin 0.8s linear infinite;
+  }
+
+  @keyframes page-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* ===== Responsivo ===== */
   @media (max-width: 640px) {
     .filters-grid,
     .detail-grid {
@@ -321,71 +296,81 @@
   }
 </style>
 
-<!-- ===== Cabeçalho de página ===== -->
-<div class="page-header">
-  <div class="page-header__eyebrow">Cadastro</div>
-  <h1 class="page-header__title">Status</h1>
-  <p class="page-header__desc">Definição dos estados operacionais dos ativos</p>
+<!-- ===== Estado de carregamento ===== -->
+<div class="page-state" id="page-loading">
+  <div class="page-spinner" aria-hidden="true"></div>
+  <span>Carregando status...</span>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-id">ID</label>
-        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-status">Status</label>
-        <select class="select" id="flt-status">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="page-state" id="page-error-state" hidden>
+  <span class="page-state__title">Não foi possível carregar os status</span>
+  <span id="page-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="page-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">5 registros encontrados</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="page-content" hidden>
+
+  <!-- ===== Cabeçalho de página ===== -->
+  <div class="page-header">
+    <div class="page-header__eyebrow">Cadastro</div>
+    <h1 class="page-header__title">Status</h1>
+    <p class="page-header__desc">Definição dos estados operacionais dos ativos</p>
   </div>
 
-  <div class="table-wrap">
-    <table class="table" id="status-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Cor</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="status-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum status encontrado para os filtros aplicados.</div>
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-id">ID</label>
+          <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">0 registros encontrados</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="status-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Cor</th>
+            <th>Ordem</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="status-tbody">
+          <!-- Linhas renderizadas via JS a partir da resposta da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum status encontrado para os filtros aplicados.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== Modal Incluir / Alterar ===== -->
@@ -408,12 +393,8 @@
         </div>
       </div>
       <div class="form-field">
-        <label class="form-label">Ativo</label>
-        <label class="toggle">
-          <input type="checkbox" id="form-ativo" checked />
-          <span class="toggle-track"></span>
-          <span class="toggle-label" id="form-ativo-label">Ativo</span>
-        </label>
+        <label class="form-label" for="form-ordem">Ordem</label>
+        <input type="number" class="input" id="form-ordem" min="0" step="1" placeholder="Ex.: 1" />
       </div>
     </div>
   </div>
@@ -436,16 +417,16 @@
         <div class="detail-field__value" id="det-id">—</div>
       </div>
       <div>
-        <div class="detail-field__label">Ativo</div>
-        <div class="detail-field__value" id="det-ativo">—</div>
-      </div>
-      <div>
         <div class="detail-field__label">Nome</div>
         <div class="detail-field__value" id="det-nome">—</div>
       </div>
       <div>
         <div class="detail-field__label">Cor</div>
         <div class="detail-field__value" id="det-cor">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Ordem</div>
+        <div class="detail-field__value" id="det-ordem">—</div>
       </div>
     </div>
   </div>
@@ -478,19 +459,51 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos status ===== */
-  var STATUS_LIST = [
-    { id: 1, nome: 'Online', cor: '#2FD4A0', ativo: true },
-    { id: 2, nome: 'Alerta', cor: '#F0A830', ativo: true },
-    { id: 3, nome: 'Crítico', cor: '#F05050', ativo: true },
-    { id: 4, nome: 'Offline', cor: '#404468', ativo: true },
-    { id: 5, nome: 'Parcial', cor: '#BFA0E8', ativo: true }
-  ];
+  /* ===== Utilitários ===== */
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var nextId = STATUS_LIST.length + 1;
-  var state = { filtered: STATUS_LIST.slice() };
+  function colorChip(cor) {
+    var c = cor || '#808080';
+    return '<span class="color-chip"><span class="color-chip__dot" style="background:' + escapeHtml(c) + '"></span>' + escapeHtml(c.toUpperCase()) + '</span>';
+  }
+
+  /* ===== Estado geral (dados vêm da API) ===== */
+  var STATUS_LIST = [];
+  var state = { filtered: [] };
   var editingId = null;
   var deletingId = null;
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('page-loading');
+  var elErrorState = document.getElementById('page-error-state');
+  var elErrorMessage = document.getElementById('page-error-message');
+  var elContent = document.getElementById('page-content');
+  var elRetry = document.getElementById('page-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   var tbody = document.getElementById('status-tbody');
   var emptyEl = document.getElementById('table-empty');
@@ -503,17 +516,13 @@
     return null;
   }
 
-  function colorChip(cor) {
-    return '<span class="color-chip"><span class="color-chip__dot" style="background:' + cor + '"></span>' + cor.toUpperCase() + '</span>';
-  }
-
   function render() {
     tbody.innerHTML = state.filtered.map(function (s) {
       return '<tr>' +
         '<td class="td-mono">' + s.id + '</td>' +
-        '<td class="hi">' + s.nome + '</td>' +
-        '<td>' + colorChip(s.cor) + '</td>' +
-        '<td>' + (s.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td class="hi">' + escapeHtml(s.nome) + '</td>' +
+        '<td>' + colorChip(s.cor_hex) + '</td>' +
+        '<td class="td-mono">' + (s.ordem != null ? s.ordem : '--') + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + s.id + '">Detalhar</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + s.id + '">Alterar</button>' +
@@ -527,17 +536,14 @@
     countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
   }
 
-  /* ===== Filtros ===== */
+  /* ===== Filtros (client-side — a API não expõe parâmetros de busca para status) ===== */
   function applyFilters() {
     var id = document.getElementById('flt-id').value.trim();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
-    var status = document.getElementById('flt-status').value;
 
     state.filtered = STATUS_LIST.filter(function (s) {
       if (id && String(s.id) !== id) return false;
-      if (nome && s.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (status === 'Ativo' && !s.ativo) return false;
-      if (status === 'Inativo' && s.ativo) return false;
+      if (nome && (s.nome || '').toLowerCase().indexOf(nome) === -1) return false;
       return true;
     });
     render();
@@ -546,7 +552,6 @@
   function clearFilters() {
     document.getElementById('flt-id').value = '';
     document.getElementById('flt-nome').value = '';
-    document.getElementById('flt-status').value = '';
     state.filtered = STATUS_LIST.slice();
     render();
   }
@@ -556,14 +561,10 @@
 
   /* ===== Modal Incluir/Alterar ===== */
   var modalForm = document.getElementById('modal-form');
-  var formAtivo = document.getElementById('form-ativo');
-  var formAtivoLabel = document.getElementById('form-ativo-label');
   var formCor = document.getElementById('form-cor');
   var formCorHex = document.getElementById('form-cor-hex');
-
-  formAtivo.addEventListener('change', function () {
-    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
-  });
+  var formOrdem = document.getElementById('form-ordem');
+  var btnSalvar = document.getElementById('btn-salvar-form');
 
   formCor.addEventListener('input', function () {
     formCorHex.value = formCor.value.toUpperCase();
@@ -580,8 +581,7 @@
     document.getElementById('form-nome').value = '';
     formCor.value = '#2FD4A0';
     formCorHex.value = '#2FD4A0';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
+    formOrdem.value = String(STATUS_LIST.length + 1);
     modalForm.showModal();
   }
 
@@ -590,36 +590,51 @@
     if (!s) return;
     editingId = id;
     document.getElementById('modal-form-title').textContent = 'Alterar Status';
-    document.getElementById('form-nome').value = s.nome;
-    formCor.value = s.cor;
-    formCorHex.value = s.cor.toUpperCase();
-    formAtivo.checked = s.ativo;
-    formAtivoLabel.textContent = s.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-nome').value = s.nome || '';
+    var cor = s.cor_hex || '#2FD4A0';
+    formCor.value = cor;
+    formCorHex.value = cor.toUpperCase();
+    formOrdem.value = s.ordem != null ? String(s.ordem) : '';
     modalForm.showModal();
   }
 
   document.getElementById('btn-incluir').addEventListener('click', openIncluir);
 
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvar.addEventListener('click', function () {
     var nome = document.getElementById('form-nome').value.trim();
+    var corHex = (formCorHex.value.trim() || formCor.value).toUpperCase();
+    var ordemVal = formOrdem.value.trim();
+
     if (!nome) {
       alert('Preencha o Nome antes de salvar.');
       return;
     }
-    var cor = formCorHex.value.trim() || formCor.value;
-    var ativo = formAtivo.checked;
-
-    if (editingId) {
-      var s = findById(editingId);
-      s.nome = nome;
-      s.cor = cor;
-      s.ativo = ativo;
-    } else {
-      STATUS_LIST.push({ id: nextId++, nome: nome, cor: cor, ativo: ativo });
+    if (!/^#[0-9A-Fa-f]{6}$/.test(corHex)) {
+      alert('Informe uma cor válida no formato #RRGGBB.');
+      return;
     }
-    modalForm.close();
-    state.filtered = STATUS_LIST.slice();
-    render();
+    if (ordemVal === '' || isNaN(parseInt(ordemVal, 10))) {
+      alert('Informe a Ordem (número inteiro).');
+      return;
+    }
+
+    var dados = { nome: nome, cor_hex: corHex, ordem: parseInt(ordemVal, 10) };
+
+    var promise = editingId
+      ? window.CMA.api.atualizarStatusOperacional(editingId, dados)
+      : window.CMA.api.criarStatusOperacional(dados);
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+    promise.then(function () {
+      modalForm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao salvar status: ' + err.message);
+    }).then(function () {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = 'Salvar';
+    });
   });
 
   /* ===== Modal Detalhar ===== */
@@ -629,14 +644,15 @@
     var s = findById(id);
     if (!s) return;
     document.getElementById('det-id').textContent = s.id;
-    document.getElementById('det-ativo').textContent = s.ativo ? 'Sim' : 'Não';
-    document.getElementById('det-nome').textContent = s.nome;
-    document.getElementById('det-cor').innerHTML = colorChip(s.cor);
+    document.getElementById('det-nome').textContent = s.nome || '--';
+    document.getElementById('det-cor').innerHTML = colorChip(s.cor_hex);
+    document.getElementById('det-ordem').textContent = s.ordem != null ? s.ordem : '--';
     modalDetail.showModal();
   }
 
   /* ===== Modal de confirmação de exclusão ===== */
   var modalConfirm = document.getElementById('modal-confirm');
+  var btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
 
   function openExcluir(id) {
     var s = findById(id);
@@ -646,14 +662,19 @@
     modalConfirm.showModal();
   }
 
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+  btnConfirmarExclusao.addEventListener('click', function () {
     if (deletingId == null) return;
-    var idx = STATUS_LIST.findIndex(function (s) { return s.id === deletingId; });
-    if (idx !== -1) STATUS_LIST.splice(idx, 1);
-    deletingId = null;
-    modalConfirm.close();
-    state.filtered = STATUS_LIST.slice();
-    render();
+    var id = deletingId;
+    btnConfirmarExclusao.disabled = true;
+    window.CMA.api.excluirStatusOperacional(id).then(function () {
+      deletingId = null;
+      modalConfirm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao excluir status: ' + err.message);
+    }).then(function () {
+      btnConfirmarExclusao.disabled = false;
+    });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -675,6 +696,23 @@
     });
   });
 
-  render();
+  /* ===== Carregamento inicial via API — ordenado por "ordem" (usada em toda a app p/ badges) ===== */
+  function carregar() {
+    mostrarLoading();
+    return window.CMA.api.getStatusOperacional().then(function (dados) {
+      STATUS_LIST = (dados || []).slice().sort(function (a, b) {
+        var oa = a.ordem != null ? a.ordem : 0;
+        var ob = b.ordem != null ? b.ordem : 0;
+        return oa - ob;
+      });
+      state.filtered = STATUS_LIST.slice();
+      render();
+      mostrarConteudo();
+    }).catch(function (err) {
+      mostrarErro(err.message);
+    });
+  }
+
+  carregar();
 })();
 </script>

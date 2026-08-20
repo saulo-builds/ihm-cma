@@ -17,6 +17,10 @@
 <link rel="stylesheet" href="/tokens/reset.css" />
 <link rel="stylesheet" href="/tokens/design-tokens.css" />
 
+<!-- Camada de comunicação com a API — o VideoWall não passa pelo router do
+     shell, então precisa importar window.CMA.api explicitamente aqui. -->
+<script src="/js/api.js"></script>
+
 <style>
   /* ==================================================================
      Escala tipográfica do VideoWall
@@ -592,6 +596,31 @@
     border-radius: 999px;
   }
 
+  /* Lista de leituras de telemetria (AMV) — pares label/valor empilhados,
+     sem barra de progresso pois as faixas nominais de cada grandeza
+     (corrente/temperatura/tensão/nível/bateria) não são conhecidas aqui. */
+  .telemetria-lista {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) * 0.35);
+  }
+
+  .telemetria-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: calc(var(--fs-kpi-label) * 0.65);
+    color: var(--text-md);
+  }
+
+  .telemetria-item strong {
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-value-sec) * 0.42);
+    color: var(--text-hi);
+    font-weight: 700;
+  }
+
   /* ==================================================================
      PAINEL 3 — Disponibilidade
   ==================================================================== */
@@ -898,7 +927,7 @@
 
     <div class="geo-side">
       <div class="geo-side__titulo">Status dos Ativos</div>
-      <div class="geo-side__lista" id="geo-lista"><!-- preenchido via JS a partir de ATIVOS --></div>
+      <div class="geo-side__lista" id="geo-lista"><!-- preenchido via JS a partir de CMA.api.getEquipamentos() --></div>
       <div class="geo-side__kpis">
         <div class="geo-kpi">
           <div class="geo-kpi__valor cor-ok" id="kpi-online">--</div>
@@ -987,10 +1016,13 @@
     <div class="rec-card">
       <div class="rec-card__titulo">Monitoramento AMV</div>
       <div class="rec-card__corpo">
-        <div class="bloco-status bloco-ok">Operante</div>
-        <div class="medidor-linear">
-          <div class="medidor-linear__topo"><span>Última leitura de corrente</span><strong>0.13A</strong></div>
-          <div class="medidor-linear__trilho"><div class="medidor-linear__preenchido" style="width: 13%"></div></div>
+        <div class="bloco-status bloco-neutro" id="amv-status">Carregando…</div>
+        <div class="telemetria-lista" id="amv-telemetria">
+          <div class="telemetria-item"><span>Corrente</span><strong id="amv-corrente">--</strong></div>
+          <div class="telemetria-item"><span>Temperatura</span><strong id="amv-temperatura">--</strong></div>
+          <div class="telemetria-item"><span>Tensão</span><strong id="amv-tensao">--</strong></div>
+          <div class="telemetria-item"><span>Nível</span><strong id="amv-nivel">--</strong></div>
+          <div class="telemetria-item"><span>Bateria</span><strong id="amv-bateria">--</strong></div>
         </div>
       </div>
     </div>
@@ -1027,13 +1059,13 @@
       </div>
     </div>
 
-    <div class="disp-direita" id="disp-categorias"><!-- preenchido via JS a partir de ATIVOS --></div>
+    <div class="disp-direita" id="disp-categorias"><!-- preenchido via JS a partir de CMA.api.getDashboard().por_categoria --></div>
   </section>
 
   <!-- ===== MODO CRISE — layout de falha crítica ===== -->
   <section class="vw-painel" id="painel-crise">
     <div class="painel-titulo">Falha Crítica Detectada</div>
-    <div class="crise-grid" id="crise-cards"><!-- preenchido via JS a partir de ATIVOS_EM_FALHA --></div>
+    <div class="crise-grid" id="crise-cards"><!-- preenchido via JS a partir de ATIVOS_EM_FALHA (alimentado por CMA.api.getAlarmes) --></div>
   </section>
 
 </main>
@@ -1046,92 +1078,184 @@
    via console do browser (window.ATIVOS_EM_FALHA = [...]) seja
    enxergada pelo setInterval de verificação (a cada 5s) — o código
    interno sempre lê window.ATIVOS_EM_FALHA, nunca uma referência
-   local capturada no momento em que a IIFE foi criada. */
+   local capturada no momento em que a IIFE foi criada.
+   Em operação normal ela é alimentada a cada 5s por atualizarAlarmes(),
+   que busca os alarmes ativos na API e filtra os de criticidade
+   'Critico'; cada item vira { id, nome, local } — o único contrato que
+   entrarModoCrise()/renderizarCartoesCrise() (mais abaixo) enxergam. */
 window.ATIVOS_EM_FALHA = [];
 
 (function () {
   'use strict';
 
   /* ================================================================
-     Dados reais dos 8 ativos monitorados — fonte única para a lista
-     de status, os KPIs e a agregação por categoria.
+     Painel 1 — lista de status dos ativos, a partir de
+     CMA.api.getEquipamentos(). Cada equipamento retornado já traz
+     status_nome (badge) e maturidade (usada para o destaque visual
+     "is-parcial", mesmo critério do mock original).
   ================================================================= */
-  var ATIVOS = [
-    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', categoria: 'Fibra',        local: 'Sala Técnica LUZ',   status: 'Online', maturidade: 'Parcial' },
-    { id: 2, nome: 'Sist. Acionamento de Bombas', categoria: 'Hidráulico',  local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
-    { id: 3, nome: 'Sistemas Elétricos',          categoria: 'Energia',     local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
-    { id: 4, nome: 'Grupo Gerador',                categoria: 'Energia',     local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
-    { id: 5, nome: 'Sistemas Elétricos',          categoria: 'Energia',     local: 'CCO Brás',           status: 'Online', maturidade: 'Concluído' },
-    { id: 6, nome: 'Monitoramento CTC',            categoria: 'Sinalização', local: 'Est. Tamanduateí',   status: 'Online', maturidade: 'Concluído' },
-    { id: 7, nome: 'Monitoramento AMV',            categoria: 'Sinalização', local: 'Brás — Linha 10',    status: 'Online', maturidade: 'Concluído' },
-    { id: 8, nome: 'STO L10',                      categoria: 'Fibra/Comun.', local: 'Linha 10 (trecho)', status: 'Online', maturidade: 'Parcial' }
-  ];
-
-  /* ================================================================
-     Painel 1 — lista de status e KPIs, gerados a partir de ATIVOS
-  ================================================================= */
-  function renderListaAtivos() {
+  function renderGeoLista(equipamentos) {
     var lista = document.getElementById('geo-lista');
+    if (!equipamentos || equipamentos.length === 0) {
+      lista.innerHTML = '<div class="asset-block__local">Nenhum ativo cadastrado.</div>';
+      return;
+    }
     var html = '';
-    ATIVOS.forEach(function (a) {
-      var parcial = a.maturidade === 'Parcial';
+    equipamentos.forEach(function (eq) {
+      var parcial = eq.maturidade === 'Parcial';
       html += '<div class="asset-block' + (parcial ? ' is-parcial' : '') + '">' +
         '<div class="asset-block__info">' +
-          '<div class="asset-block__nome">' + a.nome + '</div>' +
-          '<div class="asset-block__local">' + a.local + '</div>' +
+          '<div class="asset-block__nome">' + eq.nome + '</div>' +
+          '<div class="asset-block__local">' + (eq.localidade_nome || '') + '</div>' +
         '</div>' +
-        '<div class="asset-block__badge">' + a.status + '</div>' +
+        '<div class="asset-block__badge">' + (eq.status_nome || '--') + '</div>' +
       '</div>';
     });
     lista.innerHTML = html;
+  }
 
-    var online = ATIVOS.filter(function (a) { return a.status === 'Online'; }).length;
-    var parcial = ATIVOS.filter(function (a) { return a.maturidade === 'Parcial'; }).length;
-    var offline = ATIVOS.filter(function (a) { return a.status === 'Offline'; }).length;
+  /* ================================================================
+     KPIs (Painel 1 e Painel 3) — a partir de CMA.api.getDashboard().
+     O dashboard agrega por status (online/alerta/critico/offline/
+     parcial); "Offline / Crítico" no Painel 3 soma offline + critico,
+     conforme o rótulo do card já existente na marcação.
+  ================================================================= */
+  function renderKpisDashboard(dash) {
+    var total = dash.total || 0;
+    var online = dash.online || 0;
+    var parcial = dash.parcial || 0;
+    var offlineCritico = (dash.offline || 0) + (dash.critico || 0);
 
     document.getElementById('kpi-online').textContent = String(online).padStart(2, '0');
     document.getElementById('kpi-parcial').textContent = String(parcial).padStart(2, '0');
-    document.getElementById('kpi-offline').textContent = String(offline).padStart(2, '0');
+    document.getElementById('kpi-offline').textContent = String(offlineCritico).padStart(2, '0');
 
-    document.getElementById('disp-total').textContent = String(ATIVOS.length).padStart(2, '0');
+    document.getElementById('disp-total').textContent = String(total).padStart(2, '0');
     document.getElementById('disp-online').textContent = String(online).padStart(2, '0');
     document.getElementById('disp-parcial').textContent = String(parcial).padStart(2, '0');
-    document.getElementById('disp-offline').textContent = String(offline).padStart(2, '0');
+    document.getElementById('disp-offline').textContent = String(offlineCritico).padStart(2, '0');
 
-    var disponibilidade = Math.round((online / ATIVOS.length) * 100);
+    var disponibilidade = total > 0 ? Math.round((online / total) * 100) : 0;
     document.getElementById('disp-barra-preenchido').style.width = disponibilidade + '%';
     document.getElementById('disp-barra-valor').textContent = disponibilidade + '%';
   }
 
   /* ================================================================
-     Painel 3 — blocos por categoria, altura proporcional à quantidade
+     Painel 3 — blocos por categoria, a partir de
+     CMA.api.getDashboard().por_categoria. Altura proporcional ao
+     total da categoria; usa tipo_cor quando disponível para acentuar
+     cada bloco com a cor cadastrada do tipo de equipamento.
   ================================================================= */
-  function renderCategorias() {
-    var contagem = {};
-    var ordem = [];
-    ATIVOS.forEach(function (a) {
-      if (!contagem[a.categoria]) {
-        contagem[a.categoria] = 0;
-        ordem.push(a.categoria);
-      }
-      contagem[a.categoria]++;
-    });
-
+  function renderCategoriasDashboard(porCategoria) {
     var wrap = document.getElementById('disp-categorias');
+    if (!porCategoria || porCategoria.length === 0) {
+      wrap.innerHTML = '<div class="cat-bloco__nome">Sem dados de categoria.</div>';
+      return;
+    }
     var html = '';
-    ordem.forEach(function (cat) {
-      var qtd = contagem[cat];
+    porCategoria.forEach(function (cat) {
+      var qtd = cat.total || 0;
       var sufixo = qtd === 1 ? 'ativo' : 'ativos';
-      html += '<div class="cat-bloco" style="flex-grow: ' + qtd + '">' +
-        '<div class="cat-bloco__nome">' + cat + '</div>' +
-        '<div class="cat-bloco__meta"><strong>' + qtd + '</strong>' + sufixo + ' · Online</div>' +
+      var pct = (cat.percentual !== undefined && cat.percentual !== null) ? Math.round(cat.percentual) + '%' : '--';
+      var cor = cat.tipo_cor || corCss('--ok-hi');
+      html += '<div class="cat-bloco" style="flex-grow: ' + Math.max(qtd, 1) + '; border-color: ' + cor + '">' +
+        '<div class="cat-bloco__nome" style="color: ' + cor + '">' + (cat.tipo_nome || '') + '</div>' +
+        '<div class="cat-bloco__meta"><strong style="color: ' + cor + '">' + qtd + '</strong>' + sufixo + ' · ' + pct + '</div>' +
       '</div>';
     });
     wrap.innerHTML = html;
   }
 
-  renderListaAtivos();
-  renderCategorias();
+  /* ================================================================
+     Painel 2, Card 6 — telemetria AMV, a partir de
+     CMA.api.getTelemetriaAMV('AMV_39B'). Campos numéricos podem vir
+     null; formatarValor() mostra "--" nesse caso em vez de "null"/NaN.
+  ================================================================= */
+  function formatarValor(v, unidade, casas) {
+    if (v === null || v === undefined || typeof v !== 'number' || isNaN(v)) return '--';
+    return v.toFixed(casas === undefined ? 1 : casas) + unidade;
+  }
+
+  function renderTelemetriaAMV(dados) {
+    var statusEl = document.getElementById('amv-status');
+    if (!dados) {
+      statusEl.textContent = 'Indisponível';
+      statusEl.className = 'bloco-status bloco-neutro';
+      return;
+    }
+    statusEl.textContent = 'Operante';
+    statusEl.className = 'bloco-status bloco-ok';
+    document.getElementById('amv-corrente').textContent = formatarValor(dados.corrente, 'A', 2);
+    document.getElementById('amv-temperatura').textContent = formatarValor(dados.temperatura, '°C', 1);
+    document.getElementById('amv-tensao').textContent = formatarValor(dados.tensao, 'V', 1);
+    document.getElementById('amv-nivel').textContent = formatarValor(dados.nivel, '%', 0);
+    document.getElementById('amv-bateria').textContent = formatarValor(dados.bateria, '%', 0);
+  }
+
+  /* ================================================================
+     Polling da API — a cada 5s, em paralelo. Cada função trata seu
+     próprio erro e nunca rejeita: uma falha pontual (rede instável,
+     backend fora do ar por alguns segundos) fica só no console e a
+     tela mantém os últimos dados válidos — o VideoWall roda sem
+     supervisão numa sala de operação, então não pode "piscar" pra
+     estado de erro numa falha transitória de uma única leitura.
+  ================================================================= */
+  function atualizarAlarmes() {
+    return CMA.api.getAlarmes(true).then(function (alarmes) {
+      var criticos = (alarmes || []).filter(function (a) { return a.criticidade === 'Critico'; });
+      window.ATIVOS_EM_FALHA = criticos.map(function (a) {
+        return {
+          id: a.id,
+          nome: (a.equipamento && a.equipamento.nome) || a.titulo || 'Ativo',
+          local: (a.equipamento && a.equipamento.local) || ''
+        };
+      });
+    }).catch(function (err) {
+      console.error('[VideoWall] Falha ao buscar alarmes:', err.message);
+    });
+  }
+
+  function atualizarDashboard() {
+    return CMA.api.getDashboard().then(function (dash) {
+      renderKpisDashboard(dash);
+      renderCategoriasDashboard(dash.por_categoria);
+    }).catch(function (err) {
+      console.error('[VideoWall] Falha ao buscar dashboard:', err.message);
+    });
+  }
+
+  function atualizarEquipamentos() {
+    return CMA.api.getEquipamentos().then(function (equipamentos) {
+      renderGeoLista(equipamentos);
+    }).catch(function (err) {
+      console.error('[VideoWall] Falha ao buscar equipamentos:', err.message);
+    });
+  }
+
+  function atualizarTelemetriaAMV() {
+    return CMA.api.getTelemetriaAMV('AMV_39B').then(function (dados) {
+      renderTelemetriaAMV(dados);
+    }).catch(function (err) {
+      console.error('[VideoWall] Falha ao buscar telemetria AMV:', err.message);
+    });
+  }
+
+  function atualizarDados() {
+    atualizarAlarmes();
+    atualizarDashboard();
+    atualizarEquipamentos();
+    atualizarTelemetriaAMV();
+  }
+
+  /* Estado inicial — placeholders de carregamento antes da 1ª resposta
+     da API (os KPIs e a telemetria AMV já nascem com "--" na própria
+     marcação). Depois disso, falhas de poll nunca voltam a limpar a
+     tela: cada render só roda em caso de sucesso da respectiva chamada. */
+  document.getElementById('geo-lista').innerHTML = '<div class="asset-block__local">Carregando dados dos ativos…</div>';
+  document.getElementById('disp-categorias').innerHTML = '<div class="cat-bloco__nome">Carregando…</div>';
+
+  atualizarDados();
+  setInterval(atualizarDados, 5000);
 
   /* ================================================================
      Relógio — atualizado a cada segundo, fonte mono

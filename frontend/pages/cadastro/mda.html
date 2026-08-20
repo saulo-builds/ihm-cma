@@ -75,60 +75,6 @@
     flex-wrap: wrap;
   }
 
-  /* ===== Toggle Ativo/Inativo ===== */
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-track {
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--border-hi);
-    border-radius: 999px;
-    position: relative;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--text-md);
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: color-mix(in srgb, var(--ok) 30%, transparent);
-    border-color: var(--ok);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    transform: translateX(18px);
-    background: var(--ok-hi);
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: var(--text-hi);
-  }
-
   /* ===== Modais (<dialog> nativo) ===== */
   dialog.modal {
     border: none;
@@ -310,6 +256,41 @@
     color: var(--text-md);
   }
 
+  /* ===== Estados de carregamento e erro ===== */
+  .page-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .page-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .page-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--cad);
+    border-radius: 50%;
+    animation: page-spin 0.8s linear infinite;
+  }
+
+  @keyframes page-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
   /* ===== Responsivo ===== */
   @media (max-width: 1100px) {
     .filters-grid {
@@ -326,111 +307,126 @@
   }
 </style>
 
-<!-- ===== Cabeçalho de página ===== -->
-<div class="page-header">
-  <div class="page-header__eyebrow">Cadastro</div>
-  <h1 class="page-header__title">MDA</h1>
-  <p class="page-header__desc">Monitor de Ativos — dispositivos de coleta de telemetria</p>
+<!-- ===== Estado de carregamento ===== -->
+<div class="page-state" id="page-loading">
+  <div class="page-spinner" aria-hidden="true"></div>
+  <span>Carregando MDAs...</span>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-id">ID</label>
-        <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-mac">MAC Address</label>
-        <input type="text" class="input" id="flt-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
-      </div>
-      <div>
-        <label class="form-label" for="flt-status">Status</label>
-        <select class="select" id="flt-status">
-          <option value="">Todos</option>
-          <option value="Ativo">Ativo</option>
-          <option value="Inativo">Inativo</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-    </div>
-  </div>
+<!-- ===== Estado de erro ===== -->
+<div class="page-state" id="page-error-state" hidden>
+  <span class="page-state__title">Não foi possível carregar os MDAs</span>
+  <span id="page-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="page-retry">Tentar novamente</button>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Resultados</div>
-      <div class="card-subtitle" id="results-count">3 registros encontrados</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="page-content" hidden>
+
+  <!-- ===== Cabeçalho de página ===== -->
+  <div class="page-header">
+    <div class="page-header__eyebrow">Cadastro</div>
+    <h1 class="page-header__title">MDA</h1>
+    <p class="page-header__desc">Monitor de Ativos — dispositivos de coleta de telemetria</p>
   </div>
 
-  <div class="table-wrap">
-    <table class="table" id="mda-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>MAC Address</th>
-          <th>Nome</th>
-          <th>Última Comunicação</th>
-          <th>Qtd. Equipamentos</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="mda-tbody">
-        <!-- Linhas renderizadas via JS a partir do dataset mockado -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="table-empty" hidden>Nenhum MDA encontrado para os filtros aplicados.</div>
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-id">ID</label>
+          <input type="text" class="input" id="flt-id" placeholder="Ex.: 1" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-mac">MAC Address</label>
+          <input type="text" class="input" id="flt-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome..." />
+        </div>
+        <div>
+          <label class="form-label" for="flt-status">Status</label>
+          <select class="select" id="flt-status">
+            <option value="">Todos</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Resultados</div>
+        <div class="card-subtitle" id="results-count">0 registros encontrados</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-incluir">+ Incluir</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="mda-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>MAC Address</th>
+            <th>Nome</th>
+            <th>Localidade</th>
+            <th>Última Comunicação</th>
+            <th>Qtd. Equipamentos</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="mda-tbody">
+          <!-- Linhas renderizadas via JS a partir da resposta da API -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="table-empty" hidden>Nenhum MDA encontrado para os filtros aplicados.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== Modal Incluir / Alterar ===== -->
 <dialog class="modal" id="modal-form">
-  <form method="dialog">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-form-title">Incluir MDA</div>
-      <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-field full">
-          <label class="form-label" for="form-mac">MAC Address</label>
-          <input type="text" class="input" id="form-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
-        </div>
-        <div class="form-field full">
-          <label class="form-label" for="form-nome">Nome</label>
-          <input type="text" class="input" id="form-nome" placeholder="Ex.: MDA-TAM-01" />
-        </div>
-        <div class="form-field full">
-          <label class="form-label">Ativo</label>
-          <label class="toggle">
-            <input type="checkbox" id="form-ativo" checked />
-            <span class="toggle-track"></span>
-            <span class="toggle-label" id="form-ativo-label">Ativo</span>
-          </label>
-        </div>
+  <div class="modal-header">
+    <div class="modal-title" id="modal-form-title">Incluir MDA</div>
+    <button type="button" class="modal-close" data-close="modal-form" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-field full">
+        <label class="form-label" for="form-mac">MAC Address</label>
+        <input type="text" class="input" id="form-mac" placeholder="Ex.: A4:CF:12:3B:00:01" />
+      </div>
+      <div class="form-field full">
+        <label class="form-label" for="form-nome">Nome</label>
+        <input type="text" class="input" id="form-nome" placeholder="Ex.: MDA-TAM-01" />
+      </div>
+      <div class="form-field full">
+        <label class="form-label" for="form-localidade">Localidade</label>
+        <select class="select" id="form-localidade">
+          <option value="">Nenhuma</option>
+        </select>
       </div>
     </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
-      <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
-    </div>
-  </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" data-close="modal-form">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btn-salvar-form">Salvar</button>
+  </div>
 </dialog>
 
 <!-- ===== Modal Detalhar ===== -->
@@ -456,6 +452,10 @@
       <div>
         <div class="detail-field__label">Nome</div>
         <div class="detail-field__value" id="det-nome">—</div>
+      </div>
+      <div>
+        <div class="detail-field__label">Localidade</div>
+        <div class="detail-field__value" id="det-localidade">—</div>
       </div>
       <div>
         <div class="detail-field__label">Última Comunicação</div>
@@ -498,17 +498,55 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado dos MDAs ===== */
-  var MDAS = [
-    { id: 1, mac: 'A4:CF:12:3B:00:01', nome: 'MDA-TAM-01', comunicacao: '11/08/2026 21:30', qtd: 4, ativo: true, equipamentos: ['HID-TAM-01 · Sist. Acionamento de Bombas', 'ELE-TAM-01 · Sistemas Elétricos', 'GER-TAM-01 · Grupo Gerador', 'CTC-TAM-01 · Monitoramento CTC'] },
-    { id: 2, mac: 'A4:CF:12:3B:00:02', nome: 'MDA-BRS-01', comunicacao: '11/08/2026 21:28', qtd: 2, ativo: true, equipamentos: ['ELE-BRS-01 · Sistemas Elétricos', 'AMV-BRS-01 · Monitoramento AMV'] },
-    { id: 3, mac: 'A4:CF:12:3B:00:03', nome: 'MDA-LUZ-01', comunicacao: '11/08/2026 20:15', qtd: 1, ativo: true, equipamentos: ['FB-EBL-01 · Mon. Fibra Ebilock Luz L10'] }
-  ];
+  /* ===== Utilitários ===== */
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var nextId = MDAS.length + 1;
-  var state = { filtered: MDAS.slice() };
+  function formatDataHora(v) {
+    if (!v) return '--';
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    function pad(n) { return String(n).padStart(2, '0'); }
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  /* ===== Estado geral (dados vêm da API) ===== */
+  var MDAS = [];
+  var LOCALIDADES = [];
+  var state = { filtered: [] };
   var editingId = null;
   var deletingId = null;
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('page-loading');
+  var elErrorState = document.getElementById('page-error-state');
+  var elErrorMessage = document.getElementById('page-error-message');
+  var elContent = document.getElementById('page-content');
+  var elRetry = document.getElementById('page-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   var tbody = document.getElementById('mda-tbody');
   var emptyEl = document.getElementById('table-empty');
@@ -521,15 +559,27 @@
     return null;
   }
 
+  function nomeLocalidade(m) {
+    if (m.localidade_nome) return m.localidade_nome;
+    if (m.localidade_id != null) {
+      for (var i = 0; i < LOCALIDADES.length; i++) {
+        if (LOCALIDADES[i].id === m.localidade_id) return LOCALIDADES[i].nome || ('Localidade ' + LOCALIDADES[i].id);
+      }
+    }
+    return '--';
+  }
+
   function render() {
     tbody.innerHTML = state.filtered.map(function (m) {
+      var ativo = m.ativo === undefined ? true : !!m.ativo;
       return '<tr>' +
         '<td class="td-mono">' + m.id + '</td>' +
-        '<td class="td-mono">' + m.mac + '</td>' +
-        '<td class="hi">' + m.nome + '</td>' +
-        '<td>' + m.comunicacao + '</td>' +
-        '<td class="td-mono">' + m.qtd + '</td>' +
-        '<td>' + (m.ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
+        '<td class="td-mono">' + escapeHtml(m.mac_address) + '</td>' +
+        '<td class="hi">' + escapeHtml(m.nome) + '</td>' +
+        '<td>' + escapeHtml(nomeLocalidade(m)) + '</td>' +
+        '<td>' + escapeHtml(formatDataHora(m.ultima_comunicacao)) + '</td>' +
+        '<td class="td-mono">' + (m.qtd_equipamentos != null ? m.qtd_equipamentos : 0) + '</td>' +
+        '<td>' + (ativo ? '<span class="badge-status status-ok"><span class="dot"></span>Sim</span>' : '<span class="badge-status status-offline"><span class="dot"></span>Não</span>') + '</td>' +
         '<td><div class="row-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="detalhar" data-id="' + m.id + '">Detalhar</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-action="alterar" data-id="' + m.id + '">Alterar</button>' +
@@ -543,7 +593,7 @@
     countEl.textContent = state.filtered.length + (state.filtered.length === 1 ? ' registro encontrado' : ' registros encontrados');
   }
 
-  /* ===== Filtros ===== */
+  /* ===== Filtros (client-side — a API não expõe parâmetros de busca para MDAs) ===== */
   function applyFilters() {
     var id = document.getElementById('flt-id').value.trim();
     var mac = document.getElementById('flt-mac').value.trim().toLowerCase();
@@ -552,10 +602,11 @@
 
     state.filtered = MDAS.filter(function (m) {
       if (id && String(m.id) !== id) return false;
-      if (mac && m.mac.toLowerCase().indexOf(mac) === -1) return false;
-      if (nome && m.nome.toLowerCase().indexOf(nome) === -1) return false;
-      if (status === 'Ativo' && !m.ativo) return false;
-      if (status === 'Inativo' && m.ativo) return false;
+      if (mac && (m.mac_address || '').toLowerCase().indexOf(mac) === -1) return false;
+      if (nome && (m.nome || '').toLowerCase().indexOf(nome) === -1) return false;
+      var ativo = m.ativo === undefined ? true : !!m.ativo;
+      if (status === 'Ativo' && !ativo) return false;
+      if (status === 'Inativo' && ativo) return false;
       return true;
     });
     render();
@@ -575,20 +626,23 @@
 
   /* ===== Modal Incluir/Alterar ===== */
   var modalForm = document.getElementById('modal-form');
-  var formAtivo = document.getElementById('form-ativo');
-  var formAtivoLabel = document.getElementById('form-ativo-label');
+  var formLocalidade = document.getElementById('form-localidade');
+  var btnSalvar = document.getElementById('btn-salvar-form');
 
-  formAtivo.addEventListener('change', function () {
-    formAtivoLabel.textContent = formAtivo.checked ? 'Ativo' : 'Inativo';
-  });
+  function preencherLocalidades() {
+    var opts = ['<option value="">Nenhuma</option>'];
+    LOCALIDADES.forEach(function (loc) {
+      opts.push('<option value="' + loc.id + '">' + escapeHtml(loc.nome || ('Localidade ' + loc.id)) + '</option>');
+    });
+    formLocalidade.innerHTML = opts.join('');
+  }
 
   function openIncluir() {
     editingId = null;
     document.getElementById('modal-form-title').textContent = 'Incluir MDA';
     document.getElementById('form-mac').value = '';
     document.getElementById('form-nome').value = '';
-    formAtivo.checked = true;
-    formAtivoLabel.textContent = 'Ativo';
+    formLocalidade.value = '';
     modalForm.showModal();
   }
 
@@ -597,35 +651,40 @@
     if (!m) return;
     editingId = id;
     document.getElementById('modal-form-title').textContent = 'Alterar MDA';
-    document.getElementById('form-mac').value = m.mac;
-    document.getElementById('form-nome').value = m.nome;
-    formAtivo.checked = m.ativo;
-    formAtivoLabel.textContent = m.ativo ? 'Ativo' : 'Inativo';
+    document.getElementById('form-mac').value = m.mac_address || '';
+    document.getElementById('form-nome').value = m.nome || '';
+    formLocalidade.value = m.localidade_id != null ? String(m.localidade_id) : '';
     modalForm.showModal();
   }
 
   document.getElementById('btn-incluir').addEventListener('click', openIncluir);
 
-  document.getElementById('btn-salvar-form').addEventListener('click', function () {
+  btnSalvar.addEventListener('click', function () {
     var mac = document.getElementById('form-mac').value.trim();
     var nome = document.getElementById('form-nome').value.trim();
     if (!mac || !nome) {
       alert('Preencha MAC Address e Nome antes de salvar.');
       return;
     }
-    var ativo = formAtivo.checked;
+    var dados = { nome: nome, mac_address: mac };
+    var locVal = formLocalidade.value;
+    if (locVal) dados.localidade_id = parseInt(locVal, 10);
 
-    if (editingId) {
-      var m = findById(editingId);
-      m.mac = mac;
-      m.nome = nome;
-      m.ativo = ativo;
-    } else {
-      MDAS.push({ id: nextId++, mac: mac, nome: nome, comunicacao: '—', qtd: 0, ativo: ativo, equipamentos: [] });
-    }
-    modalForm.close();
-    state.filtered = MDAS.slice();
-    render();
+    var promise = editingId
+      ? window.CMA.api.atualizarMda(editingId, dados)
+      : window.CMA.api.criarMda(dados);
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+    promise.then(function () {
+      modalForm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao salvar MDA: ' + err.message);
+    }).then(function () {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = 'Salvar';
+    });
   });
 
   /* ===== Modal Detalhar ===== */
@@ -634,24 +693,31 @@
   function openDetalhar(id) {
     var m = findById(id);
     if (!m) return;
+    var ativo = m.ativo === undefined ? true : !!m.ativo;
     document.getElementById('det-id').textContent = m.id;
-    document.getElementById('det-ativo').textContent = m.ativo ? 'Sim' : 'Não';
-    document.getElementById('det-mac').textContent = m.mac;
-    document.getElementById('det-nome').textContent = m.nome;
-    document.getElementById('det-comunicacao').textContent = m.comunicacao;
-    document.getElementById('det-qtd').textContent = m.qtd;
+    document.getElementById('det-ativo').textContent = ativo ? 'Sim' : 'Não';
+    document.getElementById('det-mac').textContent = m.mac_address || '--';
+    document.getElementById('det-nome').textContent = m.nome || '--';
+    document.getElementById('det-localidade').textContent = nomeLocalidade(m);
+    document.getElementById('det-comunicacao').textContent = formatDataHora(m.ultima_comunicacao);
+    document.getElementById('det-qtd').textContent = m.qtd_equipamentos != null ? m.qtd_equipamentos : 0;
 
     var list = document.getElementById('det-equipamentos');
-    if (m.equipamentos.length === 0) {
+    var equipamentos = m.equipamentos || [];
+    if (equipamentos.length === 0) {
       list.innerHTML = '<li style="opacity:.6">Nenhum equipamento vinculado</li>';
     } else {
-      list.innerHTML = m.equipamentos.map(function (e) { return '<li>' + e + '</li>'; }).join('');
+      list.innerHTML = equipamentos.map(function (e) {
+        var texto = typeof e === 'string' ? e : (e.nome || JSON.stringify(e));
+        return '<li>' + escapeHtml(texto) + '</li>';
+      }).join('');
     }
     modalDetail.showModal();
   }
 
   /* ===== Modal de confirmação de exclusão ===== */
   var modalConfirm = document.getElementById('modal-confirm');
+  var btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
 
   function openExcluir(id) {
     var m = findById(id);
@@ -661,14 +727,19 @@
     modalConfirm.showModal();
   }
 
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', function () {
+  btnConfirmarExclusao.addEventListener('click', function () {
     if (deletingId == null) return;
-    var idx = MDAS.findIndex(function (m) { return m.id === deletingId; });
-    if (idx !== -1) MDAS.splice(idx, 1);
-    deletingId = null;
-    modalConfirm.close();
-    state.filtered = MDAS.slice();
-    render();
+    var id = deletingId;
+    btnConfirmarExclusao.disabled = true;
+    window.CMA.api.excluirMda(id).then(function () {
+      deletingId = null;
+      modalConfirm.close();
+      return carregar();
+    }).catch(function (err) {
+      alert('Erro ao excluir MDA: ' + err.message);
+    }).then(function () {
+      btnConfirmarExclusao.disabled = false;
+    });
   });
 
   /* ===== Delegação de cliques nas ações da tabela ===== */
@@ -690,6 +761,23 @@
     });
   });
 
-  render();
+  /* ===== Orquestra o carregamento: MDAs + localidades (para o dropdown do form) ===== */
+  function carregar() {
+    mostrarLoading();
+    return Promise.all([window.CMA.api.getMdas(), window.CMA.api.getLocalidades()])
+      .then(function (resultados) {
+        MDAS = resultados[0] || [];
+        LOCALIDADES = resultados[1] || [];
+        preencherLocalidades();
+        state.filtered = MDAS.slice();
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

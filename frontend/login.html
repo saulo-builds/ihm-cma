@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login · CMA</title>
+
+<link rel="stylesheet" href="/tokens/reset.css" />
+<link rel="stylesheet" href="/tokens/design-tokens.css" />
+<link rel="stylesheet" href="/components/button.css" />
+<link rel="stylesheet" href="/components/input.css" />
+
+<style>
+  body {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, var(--surface-1) 0%, var(--bg) 60%);
+  }
+
+  .login-card {
+    width: 360px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 28px 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .login-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .login-brand__logo {
+    width: 34px;
+    height: 34px;
+    background: var(--cptm-red);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .login-brand__name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-hi);
+  }
+
+  .login-brand__sub {
+    font-size: 11.5px;
+    color: var(--text-md);
+    text-align: center;
+  }
+
+  .login-field {
+    margin-bottom: 16px;
+  }
+
+  .login-submit {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .login-error {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--crit-lo);
+    border: 1px solid var(--crit);
+    border-radius: var(--radius-sm);
+    color: var(--crit-hi);
+    font-size: 12.5px;
+    line-height: 1.4;
+    display: none;
+  }
+
+  .login-error.is-visible {
+    display: block;
+  }
+
+  .login-footer {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-lo);
+  }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-brand">
+    <div class="login-brand__logo" aria-hidden="true"></div>
+    <span class="login-brand__name">CPTM · CMA</span>
+    <span class="login-brand__sub">Centro de Monitoramento de Ativos<br />Linha 10 — Turquesa</span>
+  </div>
+
+  <form id="login-form" novalidate>
+    <div class="login-field">
+      <label class="form-label" for="login-email">E-mail</label>
+      <input type="email" class="input" id="login-email" name="email" placeholder="usuario@cptm.sp.gov.br" autocomplete="username" required />
+    </div>
+    <div class="login-field">
+      <label class="form-label" for="login-senha">Senha</label>
+      <input type="password" class="input" id="login-senha" name="senha" placeholder="••••••••" autocomplete="current-password" required />
+    </div>
+    <button type="submit" class="btn btn-primary login-submit" id="login-submit">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </form>
+
+  <div class="login-footer">Rede interna CPTM — acesso restrito</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // Se já existe token válido na sessão, pula direto pra aplicação
+  if (window.CMA.api.getToken()) {
+    window.location.href = '/';
+  }
+
+  var form = document.getElementById('login-form');
+  var submitBtn = document.getElementById('login-submit');
+  var errorBox = document.getElementById('login-error');
+
+  function mostrarErro(mensagem) {
+    errorBox.textContent = mensagem;
+    errorBox.classList.add('is-visible');
+  }
+
+  function esconderErro() {
+    errorBox.classList.remove('is-visible');
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    esconderErro();
+
+    var email = document.getElementById('login-email').value.trim();
+    var senha = document.getElementById('login-senha').value;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Entrando...';
+
+    try {
+      await window.CMA.api.login(email, senha);
+      window.location.href = '/';
+    } catch (err) {
+      mostrarErro(err.message || 'Não foi possível entrar. Tente novamente.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Entrar';
+    }
+  });
+})();
+</script>
+</body>
+</html>

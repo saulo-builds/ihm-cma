@@ -116,6 +116,51 @@
       grid-template-columns: 1fr 1fr;
     }
   }
+
+  /* Badge de status "Parcial" — não existe em badge.css (só ok/alert/crit/offline) */
+  .badge-status.status-parcial {
+    background: var(--parcial-lo);
+    color: var(--parcial-hi);
+    border: 1px solid var(--parcial);
+  }
+  .badge-status.status-parcial .dot {
+    background: var(--parcial-hi);
+  }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .loc-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .loc-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .loc-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: loc-spin 0.8s linear infinite;
+  }
+
+  @keyframes loc-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -125,53 +170,71 @@
   <p class="page-header__desc">Localidades cadastradas e seus ativos</p>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-linha">Linha</label>
-        <input type="text" class="input" id="flt-linha" placeholder="Ex.: L10" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-nome">Nome</label>
-        <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome da localidade..." />
-      </div>
-      <div class="filter-actions-inline">
-        <button type="button" class="btn btn-primary" id="btn-aplicar">Aplicar</button>
-        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-      </div>
-    </div>
-  </div>
+<!-- ===== Estado de carregamento ===== -->
+<div class="loc-state" id="loc-loading">
+  <div class="loc-spinner" aria-hidden="true"></div>
+  <span>Carregando localidades...</span>
 </div>
 
-<!-- ===== Bloco 2 — Tabela de localidades ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Localidades</div>
-      <div class="card-subtitle" id="loc-count">5 localidades encontradas</div>
+<!-- ===== Estado de erro ===== -->
+<div class="loc-state" id="loc-error-state" hidden>
+  <span class="loc-state__title">Não foi possível carregar as localidades</span>
+  <span id="loc-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="loc-retry">Tentar novamente</button>
+</div>
+
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="loc-content" hidden>
+
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-linha">Linha</label>
+          <input type="text" class="input" id="flt-linha" placeholder="Ex.: L10" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-nome">Nome</label>
+          <input type="text" class="input" id="flt-nome" placeholder="Buscar por nome da localidade..." />
+        </div>
+        <div class="filter-actions-inline">
+          <button type="button" class="btn btn-primary" id="btn-aplicar">Aplicar</button>
+          <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="table-wrap">
-    <table class="table" id="loc-table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Linha</th>
-          <th>Qtd. Ativos</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="loc-tbody">
-        <!-- Linhas renderizadas via JS -->
-      </tbody>
-    </table>
-    <div class="table-empty" id="loc-empty" hidden>Nenhuma localidade encontrada para os filtros aplicados.</div>
+
+  <!-- ===== Bloco 2 — Tabela de localidades ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Localidades</div>
+        <div class="card-subtitle" id="loc-count">-- localidades encontradas</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table" id="loc-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Linha</th>
+            <th>Qtd. Ativos</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="loc-tbody">
+          <!-- Linhas renderizadas via JS -->
+        </tbody>
+      </table>
+      <div class="table-empty" id="loc-empty" hidden>Nenhuma localidade encontrada para os filtros aplicados.</div>
+    </div>
   </div>
+
 </div>
 
 <!-- ===== JS específico desta página ===== -->
@@ -179,65 +242,63 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado — localidades e seus ativos ===== */
-  var LOCALIDADES = [
-    {
-      nome: 'Sala Técnica LUZ', linha: 'L10',
-      ativos: [
-        { nome: 'Mon. Fibra Ebilock Luz L10', categoria: 'Fibra', status: 'Online' }
-      ]
-    },
-    {
-      nome: 'Est. Tamanduateí', linha: 'L10',
-      ativos: [
-        { nome: 'Sist. Acionamento de Bombas', categoria: 'Hidráulico', status: 'Online' },
-        { nome: 'Sistemas Elétricos', categoria: 'Energia', status: 'Online' },
-        { nome: 'Grupo Gerador', categoria: 'Energia', status: 'Online' },
-        { nome: 'Monitoramento CTC', categoria: 'Sinalização', status: 'Online' }
-      ]
-    },
-    {
-      nome: 'CCO Brás', linha: 'L10',
-      ativos: [
-        { nome: 'Sistemas Elétricos', categoria: 'Energia', status: 'Online' }
-      ]
-    },
-    {
-      nome: 'Brás — Linha 10', linha: 'L10',
-      ativos: [
-        { nome: 'Monitoramento AMV', categoria: 'Sinalização', status: 'Online' }
-      ]
-    },
-    {
-      nome: 'Linha 10 (trecho)', linha: 'L10',
-      ativos: [
-        { nome: 'STO L10', categoria: 'Fibra/Comun.', status: 'Online' }
-      ]
-    }
-  ];
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
-  var CAT_CLASS = {
-    'Fibra': 'cat-fibra',
-    'Hidráulico': 'cat-hidraulico',
-    'Energia': 'cat-energia',
-    'Sinalização': 'cat-sinalizacao',
-    'Fibra/Comun.': 'cat-fibra-com'
+  var STATUS_CLASS = {
+    Online: 'status-ok',
+    Alerta: 'status-alert',
+    Critico: 'status-crit',
+    Offline: 'status-offline',
+    Parcial: 'status-parcial'
   };
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('loc-loading');
+  var elErrorState = document.getElementById('loc-error-state');
+  var elErrorMessage = document.getElementById('loc-error-message');
+  var elContent = document.getElementById('loc-content');
+  var elRetry = document.getElementById('loc-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   var tbody = document.getElementById('loc-tbody');
   var emptyEl = document.getElementById('loc-empty');
   var countEl = document.getElementById('loc-count');
-  var state = { filtered: LOCALIDADES.slice() };
+  var state = { localidades: [], filtered: [] };
 
   function detailHTML(loc) {
     if (!loc.ativos.length) {
       return '<div class="loc-detail"><p class="loc-detail__empty">Nenhum ativo cadastrado nesta localidade.</p></div>';
     }
     var items = loc.ativos.map(function (a) {
+      var statusClass = STATUS_CLASS[a.status_nome] || 'status-offline';
       return '<div class="loc-detail__item">' +
-        '<span class="loc-detail__name">' + a.nome + '</span>' +
-        '<span class="cat ' + (CAT_CLASS[a.categoria] || '') + '">' + a.categoria + '</span>' +
-        '<span class="badge-status status-ok"><span class="dot"></span>' + a.status + '</span>' +
+        '<span class="loc-detail__name">' + escapeHtml(a.nome) + '</span>' +
+        '<span class="cat" style="background:' + a.tipo_cor + '29;color:' + a.tipo_cor + '">' + escapeHtml(a.tipo_nome) + '</span>' +
+        '<span class="badge-status ' + statusClass + '"><span class="dot"></span>' + escapeHtml(a.status_nome) + '</span>' +
         '</div>';
     }).join('');
     return '<div class="loc-detail"><div class="loc-detail__list">' + items + '</div></div>';
@@ -250,8 +311,8 @@
       var row = document.createElement('tr');
       row.className = 'loc-row';
       row.innerHTML =
-        '<td class="hi">' + loc.nome + '</td>' +
-        '<td>' + loc.linha + '</td>' +
+        '<td class="hi">' + escapeHtml(loc.nome) + '</td>' +
+        '<td>' + escapeHtml(loc.linhaLabel) + '</td>' +
         '<td class="td-mono">' + loc.ativos.length + '</td>' +
         '<td><button type="button" class="btn btn-ghost btn-sm" data-toggle="' + idx + '">' +
           '<span class="loc-toggle-icon" id="loc-icon-' + idx + '">&rsaquo;</span> Detalhar' +
@@ -291,8 +352,8 @@
     var linha = document.getElementById('flt-linha').value.trim().toLowerCase();
     var nome = document.getElementById('flt-nome').value.trim().toLowerCase();
 
-    state.filtered = LOCALIDADES.filter(function (loc) {
-      if (linha && loc.linha.toLowerCase().indexOf(linha) === -1) return false;
+    state.filtered = state.localidades.filter(function (loc) {
+      if (linha && loc.linhaLabel.toLowerCase().indexOf(linha) === -1) return false;
       if (nome && loc.nome.toLowerCase().indexOf(nome) === -1) return false;
       return true;
     });
@@ -302,13 +363,49 @@
   function clearFilters() {
     document.getElementById('flt-linha').value = '';
     document.getElementById('flt-nome').value = '';
-    state.filtered = LOCALIDADES.slice();
+    state.filtered = state.localidades.slice();
     render();
   }
 
   document.getElementById('btn-aplicar').addEventListener('click', applyFilters);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
 
-  render();
+  /* ===== Carregamento — localidades + equipamentos agrupados por localidade_id ===== */
+  function carregar() {
+    mostrarLoading();
+    Promise.all([window.CMA.api.getLocalidades(), window.CMA.api.getEquipamentos(), window.CMA.api.getLinhas()])
+      .then(function (resultados) {
+        var localidades = resultados[0];
+        var equipamentos = resultados[1];
+        var linhas = resultados[2];
+
+        var nomeLinhaPorId = {};
+        linhas.forEach(function (l) { nomeLinhaPorId[l.id] = l.nome; });
+
+        var porLocalidade = {};
+        equipamentos.forEach(function (eq) {
+          if (!porLocalidade[eq.localidade_id]) porLocalidade[eq.localidade_id] = [];
+          porLocalidade[eq.localidade_id].push(eq);
+        });
+
+        state.localidades = localidades.map(function (loc) {
+          return {
+            id: loc.id,
+            nome: loc.nome,
+            linhaLabel: nomeLinhaPorId[loc.linha_id] || '--',
+            ativos: porLocalidade[loc.id] || []
+          };
+        });
+        state.filtered = state.localidades.slice();
+
+        render();
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  carregar();
 })();
 </script>

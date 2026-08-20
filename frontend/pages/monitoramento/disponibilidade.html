@@ -110,6 +110,41 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .disp-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .disp-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .disp-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--mon);
+    border-radius: 50%;
+    animation: disp-spin 0.8s linear infinite;
+  }
+
+  @keyframes disp-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -118,6 +153,22 @@
   <h1 class="page-header__title">Disponibilidade</h1>
   <p class="page-header__desc">Histórico de disponibilidade dos ativos por período</p>
 </div>
+
+<!-- ===== Estado de carregamento ===== -->
+<div class="disp-state" id="disp-loading">
+  <div class="disp-spinner" aria-hidden="true"></div>
+  <span>Carregando ativos...</span>
+</div>
+
+<!-- ===== Estado de erro ===== -->
+<div class="disp-state" id="disp-error-state" hidden>
+  <span class="disp-state__title">Não foi possível carregar os ativos</span>
+  <span id="disp-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="disp-retry">Tentar novamente</button>
+</div>
+
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="disp-content" hidden>
 
 <!-- ===== Bloco 1 — Filtros ===== -->
 <div class="page-section card">
@@ -205,24 +256,70 @@
   </div>
 </div>
 
+</div>
+<!-- fim de #disp-content -->
+
 <!-- ===== JS específico desta página ===== -->
 <script>
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado — mesmos 8 ativos, período operante em horas ===== */
-  var ATIVOS = [
-    { id: 1, nome: 'Mon. Fibra Ebilock Luz L10', tipo: 'Fibra', codigo: 'FB-EBL-01', local: 'Sala Técnica LUZ', tipoLocal: 'Sala Técnica', linha: 'L10', start: 0, end: 24, partial: [0, 6] },
-    { id: 2, nome: 'Sist. Acionamento de Bombas', tipo: 'Hidráulico', codigo: 'HID-BMB-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
-    { id: 3, nome: 'Sistemas Elétricos (Tamanduateí)', tipo: 'Energia', codigo: 'ENE-SE-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
-    { id: 4, nome: 'Grupo Gerador', tipo: 'Energia', codigo: 'ENE-GG-TAM', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
-    { id: 5, nome: 'Sistemas Elétricos (Brás)', tipo: 'Energia', codigo: 'ENE-SE-BRA', local: 'CCO Brás', tipoLocal: 'CCO', linha: 'L10', start: 0, end: 24, partial: null },
-    { id: 6, nome: 'Monitoramento CTC', tipo: 'Sinalização', codigo: 'SIN-CTC-01', local: 'Est. Tamanduateí', tipoLocal: 'Estação', linha: 'L10', start: 0, end: 24, partial: null },
-    { id: 7, nome: 'Monitoramento AMV', tipo: 'Sinalização', codigo: 'SIN-AMV-01', local: 'Brás — Linha 10', tipoLocal: 'Estação', linha: 'L10', start: 6, end: 22, partial: null },
-    { id: 8, nome: 'STO L10', tipo: 'Fibra/Comun.', codigo: 'FB-STO-L10', local: 'Linha 10', tipoLocal: 'Trecho', linha: 'L10', start: 0, end: 24, partial: [18, 24] }
+  /* ===== Números mockados de disponibilidade (período operante em horas) —
+     não há endpoint de histórico ainda, então esses valores continuam
+     fixos. Mantidos na mesma ordem do array original de 8 ativos e
+     combinados por posição com os equipamentos reais vindos da API, para
+     que nome/tipo/código/local passem a refletir dados reais. ===== */
+  var UPTIME_MOCK = [
+    { start: 0, end: 24, partial: [0, 6] },
+    { start: 0, end: 24, partial: null },
+    { start: 0, end: 24, partial: null },
+    { start: 0, end: 24, partial: null },
+    { start: 0, end: 24, partial: null },
+    { start: 0, end: 24, partial: null },
+    { start: 6, end: 22, partial: null },
+    { start: 0, end: 24, partial: [18, 24] }
   ];
+  var UPTIME_FALLBACK = { start: 0, end: 24, partial: null };
 
-  var state = { rows: ATIVOS.slice() };
+  /* Heurística para derivar "Tipo de Local" a partir do nome da localidade —
+     a API não expõe esse campo, só localidade_nome. Mantido apenas para o
+     filtro "Tipo de Local" continuar funcional com dados reais. */
+  function deriveTipoLocal(localidadeNome) {
+    var n = (localidadeNome || '').toLowerCase();
+    if (n.indexOf('cco') !== -1) return 'CCO';
+    if (n.indexOf('sala') !== -1) return 'Sala Técnica';
+    if (n.indexOf('est') !== -1) return 'Estação';
+    return 'Trecho';
+  }
+
+  var ATIVOS = [];
+  var state = { rows: [] };
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('disp-loading');
+  var elErrorState = document.getElementById('disp-error-state');
+  var elErrorMessage = document.getElementById('disp-error-message');
+  var elContent = document.getElementById('disp-content');
+  var elRetry = document.getElementById('disp-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
 
   /* ===== Bloco 1 — datas padrão: últimos 7 dias ===== */
   var dataIni = document.getElementById('flt-data-ini');
@@ -290,6 +387,7 @@
   document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
   document.getElementById('btn-limpar').addEventListener('click', clearFilters);
   document.getElementById('btn-exportar').addEventListener('click', exportCSV);
+  if (elRetry) elRetry.addEventListener('click', carregar);
 
   /* ===== Bloco 2 — gráfico canvas (linha do tempo horizontal por ativo) ===== */
   var rootStyle = getComputedStyle(document.documentElement);
@@ -384,12 +482,51 @@
     draw(ctx, w, h);
   }
 
-  renderChart();
-  if (window.ResizeObserver) {
-    var ro = new ResizeObserver(function () { renderChart(); });
-    ro.observe(container);
-  } else {
-    window.addEventListener('resize', renderChart);
+  var resizeObserverPronto = false;
+
+  /* ===== Carrega a lista real de equipamentos e monta as identidades
+     (nome, tipo, código, local) usadas no gráfico — os números de
+     disponibilidade (start/end/partial) continuam mockados, combinados
+     por posição com o equipamento correspondente. ===== */
+  function carregar() {
+    mostrarLoading();
+    window.CMA.api.getEquipamentos()
+      .then(function (equipamentos) {
+        ATIVOS = equipamentos.map(function (eq, i) {
+          var uptime = UPTIME_MOCK[i] || UPTIME_FALLBACK;
+          return {
+            id: eq.id,
+            nome: eq.nome,
+            tipo: eq.tipo_nome,
+            codigo: eq.codigo,
+            local: eq.localidade_nome,
+            tipoLocal: deriveTipoLocal(eq.localidade_nome),
+            linha: 'L10',
+            start: uptime.start,
+            end: uptime.end,
+            partial: uptime.partial
+          };
+        });
+
+        state.rows = ATIVOS.slice();
+        mostrarConteudo();
+        renderChart();
+
+        if (!resizeObserverPronto) {
+          resizeObserverPronto = true;
+          if (window.ResizeObserver) {
+            var ro = new ResizeObserver(function () { renderChart(); });
+            ro.observe(container);
+          } else {
+            window.addEventListener('resize', renderChart);
+          }
+        }
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
   }
+
+  carregar();
 })();
 </script>
