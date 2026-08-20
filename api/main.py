@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import alarmes, ativos, auth, telemetria
+from routes import alarmes, ativos, auth, cadastros, telemetria, usuarios
 
 app = FastAPI(title="IHM CMA - API", version="1.0.0")
 
@@ -18,6 +18,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(ativos.router, prefix="/api")
 app.include_router(alarmes.router, prefix="/api")
+app.include_router(usuarios.router, prefix="/api")
+app.include_router(cadastros.router, prefix="/api")
 app.include_router(telemetria.router, prefix="/api/telemetria")
 
 

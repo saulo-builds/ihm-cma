@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from auth import get_usuario_atual
 from database import get_db
 from models.schemas import (
+    AtualizarEquipamentoRequest,
     AtualizarStatusRequest,
     CategoriaDashboard,
+    CriarEquipamentoRequest,
     DashboardResponse,
     EquipamentoResponse,
     HistoricoStatusResponse,
@@ -134,6 +136,95 @@ def obter_equipamento(equipamento_id: int):
         )
 
     return equipamento
+
+
+@router.post("/equipamentos", response_model=EquipamentoResponse, status_code=status.HTTP_201_CREATED)
+def criar_equipamento(dados: CriarEquipamentoRequest):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO ihm.equipamentos
+                    (codigo, nome, descricao, tipo_id, localidade_id, mda_id,
+                     dispositivo_id, status_id, maturidade, horario_op, responsavel)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    dados.codigo,
+                    dados.nome,
+                    dados.descricao,
+                    dados.tipo_id,
+                    dados.localidade_id,
+                    dados.mda_id,
+                    dados.dispositivo_id,
+                    dados.status_id,
+                    dados.maturidade,
+                    dados.horario_op,
+                    dados.responsavel,
+                ),
+            )
+            novo_id = cur.fetchone()["id"]
+
+            cur.execute(_EQUIPAMENTO_SELECT + " WHERE e.id = %s", (novo_id,))
+            equipamento = cur.fetchone()
+
+    return equipamento
+
+
+@router.put("/equipamentos/{equipamento_id}", response_model=EquipamentoResponse)
+def atualizar_equipamento(equipamento_id: int, dados: AtualizarEquipamentoRequest):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE ihm.equipamentos
+                SET codigo = %s, nome = %s, descricao = %s, tipo_id = %s,
+                    localidade_id = %s, mda_id = %s, dispositivo_id = %s,
+                    status_id = %s, maturidade = %s, horario_op = %s,
+                    responsavel = %s, atualizado_em = NOW()
+                WHERE id = %s
+                """,
+                (
+                    dados.codigo,
+                    dados.nome,
+                    dados.descricao,
+                    dados.tipo_id,
+                    dados.localidade_id,
+                    dados.mda_id,
+                    dados.dispositivo_id,
+                    dados.status_id,
+                    dados.maturidade,
+                    dados.horario_op,
+                    dados.responsavel,
+                    equipamento_id,
+                ),
+            )
+            if cur.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Equipamento nao encontrado",
+                )
+
+            cur.execute(_EQUIPAMENTO_SELECT + " WHERE e.id = %s", (equipamento_id,))
+            equipamento = cur.fetchone()
+
+    return equipamento
+
+
+@router.delete("/equipamentos/{equipamento_id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_equipamento(equipamento_id: int):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE ihm.equipamentos SET ativo = false, atualizado_em = NOW() WHERE id = %s",
+                (equipamento_id,),
+            )
+            if cur.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Equipamento nao encontrado",
+                )
 
 
 @router.patch("/equipamentos/{equipamento_id}/status", response_model=EquipamentoResponse)
