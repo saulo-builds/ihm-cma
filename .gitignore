@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-pacotes_extra/"
+pacotes_extra/
 pacotes_faltantes/
 pacotes_vm/
+*.zip
+atualizacao_conv9.zip
+detector_amv.zip
