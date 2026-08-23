@@ -47,8 +47,8 @@ OBSTRU_AMOSTRAS_MIN = 3     # amostras consecutivas
 CORRENTE_EMBRE_MIN = 5.0    # A
 EMBRE_DURACAO_MIN_S = 6.0   # s
 
-CORRENTE_FIM_CURSO_MIN = 4.5  # A
-FIM_CURSO_DURACAO_S = 8.0     # s
+CORRENTE_FIM_CURSO_MIN = 3.5  # A — captura toda a fase de trabalho prolongada
+FIM_CURSO_DURACAO_S    = 8.0  # s — mantém (cenário 4 dura ~10s, passa folgado)
 
 # IDs dos status em ihm.status_operacional
 STATUS_ONLINE = 1
@@ -260,21 +260,7 @@ def atualizar_status(cur, equipamento_id, status_novo_id, status_atual_id, orige
 
 
 def abrir_alarme(cur, equipamento_id, tipo_anomalia, corrente, duracao_s):
-    """Abre um alarme de falha operacional, se ainda nao houver um ativo.
-
-    Retorna True se um novo alarme foi inserido, False se ja existia um
-    alarme ativo para o equipamento.
-    """
-    cur.execute(
-        """
-        SELECT id FROM ihm.alarmes
-        WHERE equipamento_id = %s AND resolvido_em IS NULL
-        """,
-        (equipamento_id,),
-    )
-    if cur.fetchone() is not None:
-        return False
-
+    """Abre um alarme de falha operacional a cada ocorrência detectada."""
     titulo = _MENSAGENS_ANOMALIA[tipo_anomalia]
     criticidade = _CRITICIDADE_ANOMALIA[tipo_anomalia]
     descricao = f"Corrente: {corrente:.2f}A · Duração: {duracao_s:.1f}s"
@@ -286,8 +272,6 @@ def abrir_alarme(cur, equipamento_id, tipo_anomalia, corrente, duracao_s):
         """,
         (equipamento_id, criticidade, titulo, descricao),
     )
-    return True
-
 
 def resolver_alarmes(cur, equipamento_id):
     """Fecha automaticamente todos os alarmes ativos do equipamento.
@@ -311,15 +295,15 @@ def processar_resultado(cur, dispositivo_id, equipamento_id, status_atual_id, ti
     Retorna o status_id vigente apos o processamento (para o chamador manter
     o estado local em dia caso mais de um acionamento seja processado no
     mesmo ciclo).
-    """
+    """  
+   
     if tipo == "normal":
         if status_atual_id != STATUS_ONLINE:
             atualizar_status(cur, equipamento_id, STATUS_ONLINE, status_atual_id)
-            resolver_alarmes(cur, equipamento_id)
-            log.info(
-                f"[{dispositivo_id}] Acionamento normal · duração {duracao:.1f}s · corrente média {corrente:.2f}A"
-            )
             status_atual_id = STATUS_ONLINE
+        log.info(
+            f"[{dispositivo_id}] Acionamento normal · duração {duracao:.1f}s · corrente média {corrente:.2f}A"
+        )
         return status_atual_id
 
     if tipo == "obstrucao":
@@ -355,6 +339,8 @@ def processar_resultado(cur, dispositivo_id, equipamento_id, status_atual_id, ti
 
 def ciclo_detector(cur, dispositivo_id, estado):
     """Executa um ciclo completo de deteccao para um dispositivo."""
+     # LOG DIAGNÓSTICO TEMPORÁRIO
+    log.info(f"[{dispositivo_id}] Ciclo. ultimo_tempo: {estado['ultimo_tempo_verificado']} · em_acionamento: {estado['em_acionamento']}")
     equipamento = buscar_equipamento(cur, dispositivo_id)
     if equipamento is None:
         log.warning(
@@ -367,6 +353,8 @@ def ciclo_detector(cur, dispositivo_id, estado):
     equipamento_id, status_atual_id, _nome = equipamento
 
     novas = buscar_amostras_novas(cur, dispositivo_id, estado["ultimo_tempo_verificado"])
+    # LOG DIAGNÓSTICO TEMPORÁRIO
+    log.info(f"[{dispositivo_id}] {len(novas)} amostras novas. Primeiras correntes: {[round(a[0],2) for a in novas[:5]]}")
     if novas:
         estado["ultimo_tempo_verificado"] = novas[-1][2]
 
@@ -434,7 +422,9 @@ def main():
             log.info("Detector encerrado pelo usuário.")
             break
         except Exception as e:
+            import traceback
             log.error(f"Erro no ciclo: {e}")
+            log.error(traceback.format_exc())
             try:
                 conn.rollback()
             except Exception:
