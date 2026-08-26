@@ -297,6 +297,26 @@ class ResolverAlarmeRequest(BaseModel):
     observacao: Optional[str] = None
 
 
+class EquipamentoAlarmeHistorico(BaseModel):
+    id: int
+    nome: str
+    local: str
+
+
+class AlarmeHistoricoResponse(BaseModel):
+    id: int
+    equipamento: EquipamentoAlarmeHistorico
+    tipo: str
+    criticidade: str
+    titulo: str
+    descricao: Optional[str] = None
+    iniciado_em: datetime
+    resolvido_em: Optional[datetime] = None
+    reconhecido_em: Optional[datetime] = None
+    reconhecido_por_nome: Optional[str] = None
+    resolvido_por_nome: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Telemetria
 # ---------------------------------------------------------------------------

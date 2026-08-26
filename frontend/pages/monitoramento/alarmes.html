@@ -418,11 +418,42 @@
     btn.addEventListener('click', function () {
       tabBtns.forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
+      var tab = btn.getAttribute('data-tab');
       Object.keys(panels).forEach(function (key) {
-        panels[key].classList.toggle('active', key === btn.getAttribute('data-tab'));
+        panels[key].classList.toggle('active', key === tab);
       });
+      if (tab === 'ativos') {
+        iniciarPollingAtivos();
+      } else {
+        pararPollingAtivos();
+      }
     });
   });
+
+  /* ===== Polling automático da aba Ativos (10s) ===== */
+  var POLL_MS = 10000;
+  var pollIntervalId = null;
+
+  function iniciarPollingAtivos() {
+    if (pollIntervalId) return;
+    pollIntervalId = setInterval(function () { carregarAtivos(); }, POLL_MS);
+  }
+
+  function pararPollingAtivos() {
+    if (!pollIntervalId) return;
+    clearInterval(pollIntervalId);
+    pollIntervalId = null;
+  }
+
+  /* Cancela o polling quando o operador navega para outra página da SPA —
+     o router só substitui o innerHTML de #content, então o setInterval
+     desta página continuaria rodando em segundo plano se não for parado aqui. */
+  function onRotaMudou(event) {
+    if (event.detail && event.detail.path === '/alarmes') return;
+    pararPollingAtivos();
+    window.removeEventListener('router:navigated', onRotaMudou);
+  }
+  window.addEventListener('router:navigated', onRotaMudou);
 
   /* ===== Bloco 3 — cards de alarme ativo ===== */
   var alarmGrid = document.getElementById('alarm-grid');
@@ -559,7 +590,10 @@
 
   /* ===== Orquestra o carregamento das duas abas ===== */
   function carregarAtivos() {
-    return window.CMA.api.getAlarmes(true).then(renderAtivos);
+    return window.CMA.api.getAlarmes(true).then(function (lista) {
+      renderAtivos(lista);
+      if (window.CMA.atualizarContadorAlarmes) window.CMA.atualizarContadorAlarmes(lista);
+    });
   }
 
   function carregarHistorico() {
@@ -574,6 +608,10 @@
     Promise.all([carregarAtivos(), carregarHistorico()])
       .then(function () {
         mostrarConteudo();
+        var tabAtiva = document.querySelector('.tab-btn.active');
+        if (tabAtiva && tabAtiva.getAttribute('data-tab') === 'ativos') {
+          iniciarPollingAtivos();
+        }
       })
       .catch(function (err) {
         mostrarErro(err.message);

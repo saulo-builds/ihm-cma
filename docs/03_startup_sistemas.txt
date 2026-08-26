@@ -1,0 +1,15 @@
+===========================================================
+ IHM-CMA — Inicializacao dos sistemas (VM de producao)
+===========================================================
+
+Backend (API — FastAPI/uvicorn, porta 8000):
+  cd ~/ihm-cma/api && uvicorn main:app --host 0.0.0.0 --port 8000 &
+
+Frontend (SPA estatica, porta 8080):
+  cd ~/ihm-cma && python3 frontend_server.py &
+
+Observacao: o frontend usa roteamento via History API (SPA). O antigo
+"python3 -m http.server 8080" nao suporta fallback para index.html e
+causava 404 ao recarregar (F5) ou acessar uma rota diretamente pela URL
+(ex.: http://host:8080/alarmes). O frontend_server.py resolve isso
+servindo index.html para qualquer rota que nao seja um arquivo real.

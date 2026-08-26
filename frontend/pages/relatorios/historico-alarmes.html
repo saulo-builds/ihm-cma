@@ -98,6 +98,34 @@
     color: var(--text-lo);
   }
 
+  /* Segunda linha (local) sob o nome do ativo, na coluna "Ativo" */
+  .hal-ativo-local {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--text-lo);
+    font-weight: 400;
+  }
+
+  /* ===== Bloco 3 — Rodapé de paginação ===== */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination__info {
+    font-size: 12px;
+    color: var(--text-md);
+  }
+
+  .pagination__nav {
+    display: flex;
+    gap: 8px;
+  }
+
   /* ===== Responsivo ===== */
   @media (max-width: 1100px) {
     .filters-grid {
@@ -109,6 +137,41 @@
     .filters-grid {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* ===== Estados de carregamento e erro ===== */
+  .ha-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: var(--text-md);
+    font-size: 13px;
+  }
+
+  .ha-state__title {
+    color: var(--text-hi);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .ha-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border-hi);
+    border-top-color: var(--rel);
+    border-radius: 50%;
+    animation: ha-spin 0.8s linear infinite;
+  }
+
+  @keyframes ha-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  [hidden] {
+    display: none !important;
   }
 
   /* ===== Impressão — relatório limpo, sem shell ===== */
@@ -148,108 +211,137 @@
   <p class="page-header__desc">Registro completo de eventos e alarmes do período</p>
 </div>
 
-<!-- ===== Bloco 1 — Filtros ===== -->
-<div class="page-section card no-print">
-  <div class="card-header">
-    <div class="card-title">Filtros</div>
-  </div>
-  <div class="card-body">
-    <div class="filters-grid">
-      <div>
-        <label class="form-label" for="flt-data-ini">Data Inicial</label>
-        <input type="date" class="input" id="flt-data-ini" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-data-fim">Data Final</label>
-        <input type="date" class="input" id="flt-data-fim" />
-      </div>
-      <div>
-        <label class="form-label" for="flt-tipo">Tipo</label>
-        <select class="select" id="flt-tipo">
-          <option value="">Todos</option>
-          <option value="Falha Operacional">Falha Operacional</option>
-          <option value="Maturidade Parcial">Maturidade Parcial</option>
-          <option value="Manutenção">Manutenção</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="flt-ativo">Ativo</label>
-        <select class="select" id="flt-ativo">
-          <option value="">Todos</option>
-          <option value="Mon. Fibra Ebilock Luz L10">Mon. Fibra Ebilock Luz L10</option>
-          <option value="Sist. Acionamento de Bombas">Sist. Acionamento de Bombas</option>
-          <option value="Sistemas Elétricos">Sistemas Elétricos</option>
-          <option value="Grupo Gerador">Grupo Gerador</option>
-          <option value="Monitoramento CTC">Monitoramento CTC</option>
-          <option value="Monitoramento AMV">Monitoramento AMV</option>
-          <option value="STO L10">STO L10</option>
-        </select>
-      </div>
-    </div>
-    <div class="filters-grid" style="margin-top: 12px;">
-      <div>
-        <label class="form-label" for="flt-criticidade">Criticidade</label>
-        <select class="select" id="flt-criticidade">
-          <option value="">Todos</option>
-          <option value="Crítico">Crítico</option>
-          <option value="Alerta">Alerta</option>
-          <option value="Normal">Normal</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="btn btn-primary" id="btn-pesquisar">Pesquisar</button>
-      <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
-      <button type="button" class="btn btn-ghost" id="btn-exportar-csv">Exportar CSV</button>
-      <button type="button" class="btn btn-ghost" id="btn-exportar-pdf">Exportar PDF</button>
-    </div>
-  </div>
+<!-- ===== Estado de carregamento ===== -->
+<div class="ha-state" id="ha-loading">
+  <div class="ha-spinner" aria-hidden="true"></div>
+  <span>Carregando histórico...</span>
 </div>
 
-<!-- ===== Bloco 2 — Resultados ===== -->
-<div class="page-section card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Eventos registrados</div>
-      <div class="card-subtitle" id="results-subtitle">Período: últimos 30 dias</div>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="alarm-banner-ok" id="banner-ok">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
-      </svg>
-      <span>Nenhuma falha operacional registrada no período — todos os ativos operaram normalmente</span>
-    </div>
+<!-- ===== Estado de erro ===== -->
+<div class="ha-state" id="ha-error-state" hidden>
+  <span class="ha-state__title">Não foi possível carregar o histórico</span>
+  <span id="ha-error-message">A API não respondeu. Verifique a conexão e tente novamente.</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="ha-retry">Tentar novamente</button>
+</div>
 
-    <div class="table-wrap">
-      <table class="table" id="result-table">
-        <thead>
-          <tr>
-            <th>Data/Hora</th>
-            <th>Ativo</th>
-            <th>Local</th>
-            <th>Tipo</th>
-            <th>Criticidade</th>
-            <th>Descrição</th>
-            <th>Duração</th>
-            <th>Resolvido por</th>
-          </tr>
-        </thead>
-        <tbody id="result-tbody"></tbody>
-      </table>
-      <div class="table-empty" id="result-empty" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-          <line x1="8" y1="14" x2="16" y2="14"></line>
-        </svg>
-        Nenhum evento encontrado para os filtros aplicados
-        <div class="table-empty__hint">Ajuste o período ou os filtros e clique em "Pesquisar" novamente</div>
+<!-- ===== Conteúdo real — populado via API ===== -->
+<div id="ha-content" hidden>
+
+  <!-- ===== Bloco 1 — Filtros ===== -->
+  <div class="page-section card no-print">
+    <div class="card-header">
+      <div class="card-title">Filtros</div>
+    </div>
+    <div class="card-body">
+      <div class="filters-grid">
+        <div>
+          <label class="form-label" for="flt-data-ini">Data Inicial</label>
+          <input type="date" class="input" id="flt-data-ini" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-data-fim">Data Final</label>
+          <input type="date" class="input" id="flt-data-fim" />
+        </div>
+        <div>
+          <label class="form-label" for="flt-tipo">Tipo</label>
+          <select class="select" id="flt-tipo">
+            <option value="">Todos</option>
+            <option value="Falha Operacional">Falha Operacional</option>
+            <option value="Maturidade Parcial">Maturidade Parcial</option>
+            <option value="Manutenção">Manutenção</option>
+            <option value="Comunicação">Comunicação</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-ativo">Ativo</label>
+          <select class="select" id="flt-ativo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-grid" style="margin-top: 12px;">
+        <div>
+          <label class="form-label" for="flt-criticidade">Criticidade</label>
+          <select class="select" id="flt-criticidade">
+            <option value="">Todos</option>
+            <option value="Critico">Crítico</option>
+            <option value="Alerta">Alerta</option>
+            <option value="Normal">Normal</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="flt-reconhecido">Reconhecido</label>
+          <select class="select" id="flt-reconhecido">
+            <option value="">Todos</option>
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" id="btn-filtrar">Filtrar</button>
+        <button type="button" class="btn btn-ghost" id="btn-limpar">Limpar</button>
+        <button type="button" class="btn btn-ghost" id="btn-exportar-csv">Exportar CSV</button>
+        <button type="button" class="btn btn-ghost" id="btn-exportar-pdf">Exportar PDF</button>
       </div>
     </div>
   </div>
+
+  <!-- ===== Bloco 2 — Resultados ===== -->
+  <div class="page-section card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Eventos registrados</div>
+        <div class="card-subtitle" id="results-subtitle">Período: últimos 30 dias</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="alarm-banner-ok" id="banner-ok" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
+        </svg>
+        <span>Nenhuma falha operacional registrada no período — todos os eventos são informativos</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="result-table">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Ativo</th>
+              <th>Tipo</th>
+              <th>Criticidade</th>
+              <th>Título</th>
+              <th>Descrição</th>
+              <th>Reconhecido por</th>
+              <th>Duração</th>
+            </tr>
+          </thead>
+          <tbody id="result-tbody"></tbody>
+        </table>
+        <div class="table-empty" id="result-empty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <line x1="8" y1="14" x2="16" y2="14"></line>
+          </svg>
+          Nenhum evento encontrado para os filtros aplicados
+          <div class="table-empty__hint">Ajuste o período ou os filtros e clique em "Filtrar" novamente</div>
+        </div>
+      </div>
+
+      <!-- ===== Bloco 3 — Paginação ===== -->
+      <div class="pagination no-print">
+        <span class="pagination__info" id="pagination-info">Página 1 de 1</span>
+        <div class="pagination__nav">
+          <button type="button" class="btn btn-ghost btn-sm" id="pg-prev">Anterior</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="pg-next">Próxima</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== JS específico desta página ===== -->
@@ -257,93 +349,229 @@
 (function () {
   'use strict';
 
-  /* ===== Dataset mockado — eventos de maturidade parcial, sem falhas operacionais ===== */
-  var EVENTOS = [
-    { data: '11/08/2026 00:00', ativo: 'STO L10', local: 'Linha 10', tipo: 'Maturidade Parcial', criticidade: 'Normal', descricao: 'Sistema parcialmente implantado', duracao: 'Em andamento', resolvidoPor: '—' },
-    { data: '11/08/2026 00:00', ativo: 'Mon. Fibra Ebilock Luz L10', local: 'Sala Técnica LUZ', tipo: 'Maturidade Parcial', criticidade: 'Normal', descricao: 'Sistema em fase de testes', duracao: 'Em andamento', resolvidoPor: '—' }
-  ];
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
 
   var CRIT_CLASS = {
-    'Crítico': 'status-crit',
-    'Alerta': 'status-alert',
-    'Normal': 'status-ok'
+    Critico: 'status-crit',
+    Alerta: 'status-alert',
+    Normal: 'status-ok'
   };
 
-  var state = { rows: EVENTOS.slice() };
+  var PAGE_SIZE = 50;
+
+  function toISODate(d) { return d.toISOString().slice(0, 10); }
+
+  function formatarDataHora(iso) {
+    if (!iso) return '--';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  }
+
+  function formatarDuracao(inicioIso, fimIso) {
+    if (!fimIso) return 'Em andamento';
+    var ini = new Date(inicioIso).getTime();
+    var fim = new Date(fimIso).getTime();
+    var ms = fim - ini;
+    if (isNaN(ms) || ms < 0) return '--';
+
+    var totalMin = Math.floor(ms / 60000);
+    var dias = Math.floor(totalMin / 1440);
+    var horas = Math.floor((totalMin % 1440) / 60);
+    var min = totalMin % 60;
+
+    var partes = [];
+    if (dias) partes.push(dias + 'd');
+    if (horas) partes.push(horas + 'h');
+    if (min || partes.length === 0) partes.push(min + 'min');
+    return partes.join(' ');
+  }
+
+  /* ===== Referências de estado (loading / erro / conteúdo) ===== */
+  var elLoading = document.getElementById('ha-loading');
+  var elErrorState = document.getElementById('ha-error-state');
+  var elErrorMessage = document.getElementById('ha-error-message');
+  var elContent = document.getElementById('ha-content');
+  var elRetry = document.getElementById('ha-retry');
+
+  function mostrarLoading() {
+    elLoading.hidden = false;
+    elErrorState.hidden = true;
+    elContent.hidden = true;
+  }
+
+  function mostrarErro(mensagem) {
+    elLoading.hidden = true;
+    elErrorState.hidden = false;
+    elContent.hidden = true;
+    elErrorMessage.textContent = mensagem || 'A API não respondeu. Verifique a conexão e tente novamente.';
+  }
+
+  function mostrarConteudo() {
+    elLoading.hidden = true;
+    elErrorState.hidden = true;
+    elContent.hidden = false;
+  }
+
+  var state = { rows: [], page: 1 };
 
   var tbody = document.getElementById('result-tbody');
   var emptyEl = document.getElementById('result-empty');
   var tableEl = document.getElementById('result-table');
   var bannerEl = document.getElementById('banner-ok');
+  var pageInfoEl = document.getElementById('pagination-info');
+  var subtituloEl = document.getElementById('results-subtitle');
 
-  /* ===== Bloco 1 — datas padrão: últimos 30 dias ===== */
+  /* ===== Datas padrão: últimos 30 dias ===== */
   var dataIni = document.getElementById('flt-data-ini');
   var dataFim = document.getElementById('flt-data-fim');
-  function toISODate(d) { return d.toISOString().slice(0, 10); }
   var hoje = new Date();
   var trintaDiasAtras = new Date();
   trintaDiasAtras.setDate(hoje.getDate() - 30);
   dataFim.value = toISODate(hoje);
   dataIni.value = toISODate(trintaDiasAtras);
 
+  /* ===== Popula o dropdown "Ativo" com os equipamentos reais ===== */
+  function carregarEquipamentosDropdown() {
+    return window.CMA.api.getEquipamentos().then(function (lista) {
+      var select = document.getElementById('flt-ativo');
+      var opts = ['<option value="">Todos</option>'];
+      lista
+        .slice()
+        .sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); })
+        .forEach(function (eq) {
+          opts.push('<option value="' + eq.id + '">' + escapeHtml(eq.nome) + '</option>');
+        });
+      select.innerHTML = opts.join('');
+    });
+  }
+
   /* ===== Bloco 2 — renderização da tabela ===== */
   function render() {
     var rows = state.rows;
+    var totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (state.page > totalPages) state.page = totalPages;
+    var start = (state.page - 1) * PAGE_SIZE;
+    var pageItems = rows.slice(start, start + PAGE_SIZE);
 
-    tbody.innerHTML = rows.map(function (e) {
+    tbody.innerHTML = pageItems.map(function (a) {
       return '<tr>' +
-        '<td class="td-mono">' + e.data + '</td>' +
-        '<td class="hi">' + e.ativo + '</td>' +
-        '<td>' + e.local + '</td>' +
-        '<td>' + e.tipo + '</td>' +
-        '<td><span class="badge-status ' + (CRIT_CLASS[e.criticidade] || 'status-offline') + '"><span class="dot"></span>' + e.criticidade + '</span></td>' +
-        '<td>' + e.descricao + '</td>' +
-        '<td>' + e.duracao + '</td>' +
-        '<td>' + e.resolvidoPor + '</td>' +
+        '<td class="td-mono">' + escapeHtml(formatarDataHora(a.iniciado_em)) + '</td>' +
+        '<td class="hi">' + escapeHtml(a.equipamento.nome) +
+        '<div class="hal-ativo-local">' + escapeHtml(a.equipamento.local) + '</div></td>' +
+        '<td>' + escapeHtml(a.tipo) + '</td>' +
+        '<td><span class="badge-status ' + (CRIT_CLASS[a.criticidade] || 'status-offline') + '"><span class="dot"></span>' + escapeHtml(a.criticidade) + '</span></td>' +
+        '<td>' + escapeHtml(a.titulo) + '</td>' +
+        '<td>' + escapeHtml(a.descricao) + '</td>' +
+        '<td>' + escapeHtml(a.reconhecido_por_nome || '—') + '</td>' +
+        '<td>' + escapeHtml(formatarDuracao(a.iniciado_em, a.resolvido_em)) + '</td>' +
         '</tr>';
     }).join('');
 
-    var hasFalha = rows.some(function (e) { return e.tipo === 'Falha Operacional'; });
-    bannerEl.hidden = hasFalha;
+    var semFalhas = rows.length > 0 && !rows.some(function (a) { return a.criticidade !== 'Normal'; });
+    bannerEl.hidden = !semFalhas;
 
     tableEl.hidden = rows.length === 0;
     emptyEl.hidden = rows.length !== 0;
+
+    pageInfoEl.textContent = 'Página ' + state.page + ' de ' + totalPages;
+    document.getElementById('pg-prev').disabled = state.page <= 1;
+    document.getElementById('pg-next').disabled = state.page >= totalPages;
   }
 
   /* ===== Bloco 1 — filtros ===== */
-  function applyFilters() {
+  function montarFiltros() {
+    var filtros = {};
+    if (dataIni.value) filtros.data_inicio = dataIni.value;
+    if (dataFim.value) filtros.data_fim = dataFim.value;
+
     var tipo = document.getElementById('flt-tipo').value;
-    var ativo = document.getElementById('flt-ativo').value;
+    if (tipo) filtros.tipo = tipo;
+
     var criticidade = document.getElementById('flt-criticidade').value;
+    if (criticidade) filtros.criticidade = criticidade;
 
-    state.rows = EVENTOS.filter(function (e) {
-      if (tipo && e.tipo !== tipo) return false;
-      if (ativo && e.ativo !== ativo) return false;
-      if (criticidade && e.criticidade !== criticidade) return false;
-      return true;
-    });
+    var equipamentoId = document.getElementById('flt-ativo').value;
+    if (equipamentoId) filtros.equipamento_id = equipamentoId;
 
-    document.getElementById('results-subtitle').textContent = 'Período: ' + dataIni.value + ' a ' + dataFim.value;
-    render();
+    var reconhecido = document.getElementById('flt-reconhecido').value;
+    if (reconhecido) filtros.reconhecido = reconhecido;
+
+    return filtros;
   }
 
-  function clearFilters() {
-    ['flt-tipo', 'flt-ativo', 'flt-criticidade'].forEach(function (id) {
+  /* Busca no servidor com os filtros atuais — não há polling: só roda ao
+     carregar a página ou quando o operador clica em "Filtrar" */
+  function buscarHistorico() {
+    return window.CMA.api.getHistoricoAlarmes(montarFiltros()).then(function (lista) {
+      state.rows = lista;
+      state.page = 1;
+      subtituloEl.textContent = 'Período: ' + dataIni.value + ' a ' + dataFim.value +
+        ' · ' + lista.length + ' registro' + (lista.length === 1 ? '' : 's');
+      render();
+    });
+  }
+
+  function carregarInicial() {
+    mostrarLoading();
+    Promise.all([carregarEquipamentosDropdown(), buscarHistorico()])
+      .then(function () {
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  function filtrar() {
+    mostrarLoading();
+    buscarHistorico()
+      .then(function () {
+        mostrarConteudo();
+      })
+      .catch(function (err) {
+        mostrarErro(err.message);
+      });
+  }
+
+  function limparFiltros() {
+    ['flt-tipo', 'flt-ativo', 'flt-criticidade', 'flt-reconhecido'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
     dataFim.value = toISODate(hoje);
     dataIni.value = toISODate(trintaDiasAtras);
-    state.rows = EVENTOS.slice();
-    document.getElementById('results-subtitle').textContent = 'Período: últimos 30 dias';
-    render();
+    filtrar();
   }
 
-  /* ===== Bloco 1 — exportação ===== */
+  /* ===== Bloco 3 — paginação ===== */
+  document.getElementById('pg-prev').addEventListener('click', function () {
+    if (state.page > 1) { state.page--; render(); }
+  });
+  document.getElementById('pg-next').addEventListener('click', function () {
+    var totalPages = Math.max(1, Math.ceil(state.rows.length / PAGE_SIZE));
+    if (state.page < totalPages) { state.page++; render(); }
+  });
+
+  /* ===== Exportação — usa todos os registros filtrados, não só a página atual ===== */
   function exportCSV() {
-    var header = ['Data/Hora', 'Ativo', 'Local', 'Tipo', 'Criticidade', 'Descrição', 'Duração', 'Resolvido por'];
+    var header = ['Data/Hora', 'Ativo', 'Local', 'Tipo', 'Criticidade', 'Título', 'Descrição', 'Reconhecido por', 'Duração'];
     var lines = [header.join(';')];
-    state.rows.forEach(function (e) {
-      lines.push([e.data, e.ativo, e.local, e.tipo, e.criticidade, e.descricao, e.duracao, e.resolvidoPor].join(';'));
+    state.rows.forEach(function (a) {
+      lines.push([
+        formatarDataHora(a.iniciado_em),
+        a.equipamento.nome,
+        a.equipamento.local,
+        a.tipo,
+        a.criticidade,
+        a.titulo,
+        a.descricao || '',
+        a.reconhecido_por_nome || '—',
+        formatarDuracao(a.iniciado_em, a.resolvido_em)
+      ].join(';'));
     });
     var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     var url = URL.createObjectURL(blob);
@@ -360,11 +588,12 @@
     window.print();
   }
 
-  document.getElementById('btn-pesquisar').addEventListener('click', applyFilters);
-  document.getElementById('btn-limpar').addEventListener('click', clearFilters);
+  if (elRetry) elRetry.addEventListener('click', carregarInicial);
+  document.getElementById('btn-filtrar').addEventListener('click', filtrar);
+  document.getElementById('btn-limpar').addEventListener('click', limparFiltros);
   document.getElementById('btn-exportar-csv').addEventListener('click', exportCSV);
   document.getElementById('btn-exportar-pdf').addEventListener('click', exportPDF);
 
-  render();
+  carregarInicial();
 })();
 </script>

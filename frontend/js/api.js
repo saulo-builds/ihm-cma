@@ -172,6 +172,9 @@ window.CMA = window.CMA || {};
         body: JSON.stringify({ observacao: observacao || null }),
       });
     },
+    getHistoricoAlarmes: function (filtros) {
+      return apiFetch('/api/alarmes/historico' + construirQuery(filtros));
+    },
 
     // ---- Telemetria AMV ----
     getTelemetriaAMV: function (dispositivoId) {

@@ -1,9 +1,18 @@
 """Endpoints de alarmes ativos e historico."""
+from datetime import date, timedelta
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from auth import get_usuario_atual
 from database import get_db
-from models.schemas import AlarmeResponse, EquipamentoAlarme, ResolverAlarmeRequest
+from models.schemas import (
+    AlarmeHistoricoResponse,
+    AlarmeResponse,
+    EquipamentoAlarme,
+    EquipamentoAlarmeHistorico,
+    ResolverAlarmeRequest,
+)
 
 router = APIRouter(dependencies=[Depends(get_usuario_atual)])
 
@@ -15,6 +24,19 @@ _ALARME_SELECT = """
     FROM ihm.alarmes a
     JOIN ihm.equipamentos e ON e.id = a.equipamento_id
     JOIN ihm.localidades l ON l.id = e.localidade_id
+"""
+
+_HISTORICO_SELECT = """
+    SELECT
+        a.id, a.tipo, a.criticidade, a.titulo, a.descricao,
+        a.iniciado_em, a.resolvido_em, a.reconhecido_em,
+        ur.nome AS reconhecido_por_nome, urr.nome AS resolvido_por_nome,
+        e.id AS equipamento_id, e.nome AS equipamento_nome, l.nome AS localidade_nome
+    FROM ihm.alarmes a
+    JOIN ihm.equipamentos e ON e.id = a.equipamento_id
+    JOIN ihm.localidades l ON l.id = e.localidade_id
+    LEFT JOIN ihm.usuarios ur ON ur.id = a.reconhecido_por
+    LEFT JOIN ihm.usuarios urr ON urr.id = a.resolvido_por
 """
 
 
@@ -31,6 +53,24 @@ def _para_response(row) -> AlarmeResponse:
     )
 
 
+def _para_historico_response(row) -> AlarmeHistoricoResponse:
+    return AlarmeHistoricoResponse(
+        id=row["id"],
+        equipamento=EquipamentoAlarmeHistorico(
+            id=row["equipamento_id"], nome=row["equipamento_nome"], local=row["localidade_nome"]
+        ),
+        tipo=row["tipo"],
+        criticidade=row["criticidade"],
+        titulo=row["titulo"],
+        descricao=row["descricao"],
+        iniciado_em=row["iniciado_em"],
+        resolvido_em=row["resolvido_em"],
+        reconhecido_em=row["reconhecido_em"],
+        reconhecido_por_nome=row["reconhecido_por_nome"],
+        resolvido_por_nome=row["resolvido_por_nome"],
+    )
+
+
 @router.get("/alarmes", response_model=list[AlarmeResponse])
 def listar_alarmes(ativos: bool = Query(True)):
     sql = _ALARME_SELECT
@@ -42,6 +82,41 @@ def listar_alarmes(ativos: bool = Query(True)):
         with conn.cursor() as cur:
             cur.execute(sql)
             return [_para_response(r) for r in cur.fetchall()]
+
+
+@router.get("/alarmes/historico", response_model=list[AlarmeHistoricoResponse])
+def historico_alarmes(
+    data_inicio: Optional[date] = Query(None),
+    data_fim: Optional[date] = Query(None),
+    criticidade: Optional[str] = Query(None),
+    tipo: Optional[str] = Query(None),
+    equipamento_id: Optional[int] = Query(None),
+    reconhecido: Optional[bool] = Query(None),
+):
+    fim = data_fim or date.today()
+    inicio = data_inicio or (fim - timedelta(days=30))
+
+    condicoes = ["(a.iniciado_em AT TIME ZONE 'America/Sao_Paulo')::date BETWEEN %s AND %s"]
+    params: list = [inicio, fim]
+
+    if criticidade:
+        condicoes.append("a.criticidade = %s")
+        params.append(criticidade)
+    if tipo:
+        condicoes.append("a.tipo = %s")
+        params.append(tipo)
+    if equipamento_id is not None:
+        condicoes.append("a.equipamento_id = %s")
+        params.append(equipamento_id)
+    if reconhecido is not None:
+        condicoes.append("a.reconhecido_em IS " + ("NOT NULL" if reconhecido else "NULL"))
+
+    sql = _HISTORICO_SELECT + " WHERE " + " AND ".join(condicoes) + " ORDER BY a.iniciado_em DESC"
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            return [_para_historico_response(r) for r in cur.fetchall()]
 
 
 @router.patch("/alarmes/{alarme_id}/reconhecer", response_model=AlarmeResponse)
