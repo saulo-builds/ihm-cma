@@ -181,6 +181,10 @@
     display: none;
   }
 
+  .alarm-card:not(.is-ack) .btn-resolver {
+    display: none;
+  }
+
   /* ===== Bloco 4 — Aba Histórico ===== */
   .hist-filters {
     display: flex;
@@ -460,6 +464,9 @@
         '</div>' +
         '<div class="alarm-card__actions">' +
         ackTag +
+        (a.reconhecido
+          ? '<button type="button" class="btn btn-ghost btn-sm btn-resolver" data-id="' + a.id + '">Resolver</button>'
+          : '') +
         '<button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>' +
         '</div>' +
         '</div>'
@@ -472,6 +479,22 @@
         var id = btn.getAttribute('data-id');
         btn.disabled = true;
         window.CMA.api.reconhecerAlarme(id)
+          .then(function () {
+            return carregarAtivos();
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            window.alert(err.message);
+          });
+      });
+    });
+
+    /* Delega clique nos botões "Resolver" recém-criados */
+    alarmGrid.querySelectorAll('.btn-resolver').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        window.CMA.api.resolverAlarme(id, null)
           .then(function () {
             return carregarAtivos();
           })
