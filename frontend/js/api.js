@@ -6,16 +6,16 @@ window.CMA = window.CMA || {};
 (function () {
   'use strict';
 
-  var API_BASE = 'http://localhost:8000';
+  var API_BASE = 'http://10.148.53.111:8000';
   var CHAVE_TOKEN = 'cma_token';
   var CHAVE_USUARIO = 'cma_usuario';
 
   function getToken() {
-    return sessionStorage.getItem(CHAVE_TOKEN);
+    return localStorage.getItem(CHAVE_TOKEN);
   }
 
   function getUsuario() {
-    var raw = sessionStorage.getItem(CHAVE_USUARIO);
+    var raw = localStorage.getItem(CHAVE_USUARIO);
     if (!raw) return null;
     try {
       return JSON.parse(raw);
@@ -25,8 +25,8 @@ window.CMA = window.CMA || {};
   }
 
   function salvarSessao(token, usuario) {
-    sessionStorage.setItem(CHAVE_TOKEN, token);
-    sessionStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
+    localStorage.setItem(CHAVE_TOKEN, token);
+    localStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
   }
 
   function caminhoLogin() {
@@ -34,8 +34,8 @@ window.CMA = window.CMA || {};
   }
 
   function logout() {
-    sessionStorage.removeItem(CHAVE_TOKEN);
-    sessionStorage.removeItem(CHAVE_USUARIO);
+    localStorage.removeItem(CHAVE_TOKEN);
+    localStorage.removeItem(CHAVE_USUARIO);
     window.location.href = caminhoLogin();
   }
 
