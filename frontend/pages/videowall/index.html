@@ -764,57 +764,90 @@
   }
 
   /* ==================================================================
-     MODO CRISE — layout de falha crítica, substitui o carrossel
+     Painel de notificação de alarmes críticos — overlay discreto no
+     canto inferior direito, sobreposto ao carrossel (que NUNCA para).
+     Layout híbrido conforme a quantidade de alarmes simultâneos:
+     1 = card único centralizado; 2-3 = linha; 4+ = grid de 2 colunas.
   ==================================================================== */
-  #painel-crise {
-    background: var(--crit-lo);
-    padding: var(--pad);
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
+  .alarmes-painel {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 50;
+    display: none;
+    max-width: calc(100vw - 48px);
   }
 
-  #painel-crise .painel-titulo {
-    color: var(--crit-hi);
+  .alarmes-painel.is-single,
+  .alarmes-painel.is-linha {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+
+  .alarmes-painel.is-single .alarme-card,
+  .alarmes-painel.is-linha .alarme-card {
+    width: 280px;
     flex-shrink: 0;
   }
 
-  .crise-grid {
-    flex: 1;
-    min-height: 0;
+  .alarmes-painel.is-single .alarme-card {
+    width: 380px;
+  }
+
+  .alarmes-painel.is-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--gap);
-    overflow-y: auto;
+    grid-template-columns: repeat(2, 280px);
+    gap: 16px;
   }
 
-  .crise-card {
-    background: var(--surface-1);
-    border: clamp(2px, 0.3vh, 6px) solid var(--crit-hi);
-    border-radius: var(--radius);
-    padding: var(--pad);
+  .alarme-card {
+    background: rgba(160, 0, 0, 0.92);
+    border: 2px solid #ff4444;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .alarme-card__cabecalho {
     display: flex;
-    flex-direction: column;
-    gap: calc(var(--gap) * 0.4);
-  }
-
-  .crise-card__nome {
-    font-size: var(--fs-status);
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
     font-weight: 700;
-    color: var(--text-hi);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #ffdada;
+    margin-bottom: 6px;
   }
 
-  .crise-card__local {
-    font-size: calc(var(--fs-status) * 0.6);
-    color: var(--text-md);
+  .alarme-card__nome {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
   }
 
-  .crise-card__timer {
+  .alarme-card__local {
+    font-size: 13px;
+    color: #ffdada;
+    margin-top: 2px;
+  }
+
+  .alarme-card__titulo {
+    font-size: 14px;
+    color: #ffffff;
+    margin-top: 8px;
+  }
+
+  .alarme-card__timer {
     font-family: var(--font-mono);
-    font-size: var(--fs-value-sec);
+    font-size: 20px;
     font-weight: 700;
-    color: var(--crit-hi);
-    margin-top: calc(var(--gap) * 0.3);
+    color: #ffffff;
+    margin-top: 8px;
   }
 </style>
 </head>
@@ -873,10 +906,10 @@
           <text class="map-estacao-label" x="850" y="450">Tamanduateí</text>
 
           <circle class="map-estacao" cx="1250" cy="400" r="16"></circle>
-          <text class="map-estacao-label" x="1250" y="450">Cangaíba</text>
+          <text class="map-estacao-label" x="1250" y="450">Utinga</text>
 
           <circle class="map-estacao" cx="1550" cy="400" r="16"></circle>
-          <text class="map-estacao-label" x="1550" y="450">Guaianases</text>
+          <text class="map-estacao-label" x="1550" y="450">Capuava</text>
 
           <!-- ===== Pins — Luz: Mon. Fibra Ebilock (parcial) ===== -->
           <path class="map-conector" d="M 100 262 L 100 388"></path>
@@ -1062,27 +1095,29 @@
     <div class="disp-direita" id="disp-categorias"><!-- preenchido via JS a partir de CMA.api.getDashboard().por_categoria --></div>
   </section>
 
-  <!-- ===== MODO CRISE — layout de falha crítica ===== -->
-  <section class="vw-painel" id="painel-crise">
-    <div class="painel-titulo">Falha Crítica Detectada</div>
-    <div class="crise-grid" id="crise-cards"><!-- preenchido via JS a partir de ATIVOS_EM_FALHA (alimentado por CMA.api.getAlarmes) --></div>
-  </section>
-
 </main>
 
-<!-- ===== JS do VideoWall — dados, carrossel, relógio, gauge, modo crise ===== -->
+<!-- ===== Painel de notificação de alarmes críticos — overlay fixo no canto
+     inferior direito, sobreposto ao carrossel; o carrossel NUNCA para.
+     Populado via JS a partir de ATIVOS_EM_FALHA (alimentado por CMA.api.getAlarmes).
+     Vazio + sem classe de layout = display: none (ver CSS). ===== -->
+<div class="alarmes-painel" id="alarmes-painel"></div>
+
+<!-- ===== JS do VideoWall — dados, carrossel, relógio, gauge, alarmes críticos ===== -->
 <script>
-/* Ativos atualmente em falha crítica — array vazio em operação normal.
+/* Alarmes críticos ativos no momento — array vazio quando não há nenhum.
    Declarada no escopo global (fora da IIFE) e nunca redeclarada com
    let/const/var dentro dela, para que uma reatribuição completa feita
    via console do browser (window.ATIVOS_EM_FALHA = [...]) seja
-   enxergada pelo setInterval de verificação (a cada 5s) — o código
-   interno sempre lê window.ATIVOS_EM_FALHA, nunca uma referência
-   local capturada no momento em que a IIFE foi criada.
+   enxergada imediatamente — o código interno sempre lê
+   window.ATIVOS_EM_FALHA, nunca uma referência local capturada no
+   momento em que a IIFE foi criada.
    Em operação normal ela é alimentada a cada 5s por atualizarAlarmes(),
    que busca os alarmes ativos na API e filtra os de criticidade
-   'Critico'; cada item vira { id, nome, local } — o único contrato que
-   entrarModoCrise()/renderizarCartoesCrise() (mais abaixo) enxergam. */
+   'Critico' sem resolvido_em; cada item vira
+   { id, nome, local, titulo, iniciado_em } — o contrato que
+   renderizarAlarmesCriticos() (mais abaixo) usa para desenhar o painel
+   de notificação. O carrossel nunca para por causa dela. */
 window.ATIVOS_EM_FALHA = [];
 
 (function () {
@@ -1192,6 +1227,60 @@ window.ATIVOS_EM_FALHA = [];
     document.getElementById('amv-bateria').textContent = formatarValor(dados.bateria, '%', 0);
   }
 
+  /* Escapa texto vindo da API (nome de equipamento, título de alarme) antes
+     de injetar via innerHTML — mesmo padrão usado nas demais páginas do app. */
+  function escapeHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+  }
+
+  /* ================================================================
+     Painel de notificação de alarmes críticos — overlay fixo no canto
+     inferior direito, sobreposto ao carrossel (que nunca para). Layout
+     híbrido conforme a quantidade de alarmes simultâneos em
+     window.ATIVOS_EM_FALHA: 1 = card único centralizado, 2-3 = linha,
+     4+ = grid de 2 colunas. Sem alarmes críticos, o painel some.
+  ================================================================= */
+  function formatarCronometro(ms) {
+    var totalSeg = Math.max(0, Math.floor(ms / 1000));
+    var hh = Math.floor(totalSeg / 3600);
+    var mm = Math.floor((totalSeg % 3600) / 60);
+    var ss = totalSeg % 60;
+    if (hh > 0) return pad2(hh) + ':' + pad2(mm) + ':' + pad2(ss);
+    return pad2(mm) + ':' + pad2(ss);
+  }
+
+  function renderizarAlarmesCriticos() {
+    var painel = document.getElementById('alarmes-painel');
+    var lista = window.ATIVOS_EM_FALHA;
+
+    painel.classList.remove('is-single', 'is-linha', 'is-grid');
+
+    if (!lista.length) {
+      painel.innerHTML = '';
+      return;
+    }
+
+    if (lista.length === 1) painel.classList.add('is-single');
+    else if (lista.length <= 3) painel.classList.add('is-linha');
+    else painel.classList.add('is-grid');
+
+    var html = '';
+    lista.forEach(function (a) {
+      var inicio = a.iniciado_em ? new Date(a.iniciado_em).getTime() : Date.now();
+      var decorrido = Date.now() - inicio;
+      html += '<div class="alarme-card">' +
+        '<div class="alarme-card__cabecalho"><span aria-hidden="true">⚠</span> Alarme Crítico</div>' +
+        '<div class="alarme-card__nome">' + escapeHtml(a.nome) + '</div>' +
+        '<div class="alarme-card__local">' + escapeHtml(a.local) + '</div>' +
+        '<div class="alarme-card__titulo">' + escapeHtml(a.titulo) + '</div>' +
+        '<div class="alarme-card__timer">' + formatarCronometro(decorrido) + '</div>' +
+      '</div>';
+    });
+    painel.innerHTML = html;
+  }
+
   /* ================================================================
      Polling da API — a cada 5s, em paralelo. Cada função trata seu
      próprio erro e nunca rejeita: uma falha pontual (rede instável,
@@ -1202,14 +1291,19 @@ window.ATIVOS_EM_FALHA = [];
   ================================================================= */
   function atualizarAlarmes() {
     return CMA.api.getAlarmes(true).then(function (alarmes) {
-      var criticos = (alarmes || []).filter(function (a) { return a.criticidade === 'Critico'; });
+      var criticos = (alarmes || []).filter(function (a) {
+        return a.criticidade === 'Critico' && !a.resolvido_em;
+      });
       window.ATIVOS_EM_FALHA = criticos.map(function (a) {
         return {
           id: a.id,
           nome: (a.equipamento && a.equipamento.nome) || a.titulo || 'Ativo',
-          local: (a.equipamento && a.equipamento.local) || ''
+          local: (a.equipamento && a.equipamento.local) || '',
+          titulo: a.titulo || '',
+          iniciado_em: a.iniciado_em || null
         };
       });
+      renderizarAlarmesCriticos();
     }).catch(function (err) {
       console.error('[VideoWall] Falha ao buscar alarmes:', err.message);
     });
@@ -1345,11 +1439,9 @@ window.ATIVOS_EM_FALHA = [];
 
   var progressBarEl = document.getElementById('vw-progress-bar');
   var dotEls = Array.prototype.slice.call(document.querySelectorAll('.vw-dot'));
-  var painelCriseEl = document.getElementById('painel-crise');
 
   var indiceAtual = 0;
   var inicioPainel = performance.now();
-  var emCrise = false;
 
   function ativarPainel(indice) {
     PAINEIS.forEach(function (p, i) {
@@ -1361,18 +1453,19 @@ window.ATIVOS_EM_FALHA = [];
     });
   }
 
+  /* O carrossel roda ininterruptamente — alarmes críticos não o pausam
+     mais, apenas disparam o painel de notificação sobreposto (ver
+     renderizarAlarmesCriticos, acima). */
   function loopCarrossel(agora) {
-    if (!emCrise) {
-      var painel = PAINEIS[indiceAtual];
-      var decorrido = agora - inicioPainel;
-      var pct = Math.min(100, (decorrido / painel.duracao) * 100);
-      progressBarEl.style.width = pct + '%';
+    var painel = PAINEIS[indiceAtual];
+    var decorrido = agora - inicioPainel;
+    var pct = Math.min(100, (decorrido / painel.duracao) * 100);
+    progressBarEl.style.width = pct + '%';
 
-      if (decorrido >= painel.duracao) {
-        indiceAtual = (indiceAtual + 1) % PAINEIS.length;
-        inicioPainel = agora;
-        ativarPainel(indiceAtual);
-      }
+    if (decorrido >= painel.duracao) {
+      indiceAtual = (indiceAtual + 1) % PAINEIS.length;
+      inicioPainel = agora;
+      ativarPainel(indiceAtual);
     }
     requestAnimationFrame(loopCarrossel);
   }
@@ -1380,67 +1473,10 @@ window.ATIVOS_EM_FALHA = [];
   ativarPainel(indiceAtual);
   requestAnimationFrame(loopCarrossel);
 
-  /* ================================================================
-     Modo crise — verifica ATIVOS_EM_FALHA a cada 5s; quando populado,
-     interrompe o carrossel e assume o layout de falha crítica.
-  ================================================================= */
-  var cronometrosFalha = {};
-
-  function entrarModoCrise() {
-    emCrise = true;
-    PAINEIS.forEach(function (p) {
-      document.getElementById(p.id).classList.remove('is-active');
-    });
-    dotEls.forEach(function (dot) { dot.classList.remove('is-active'); });
-    progressBarEl.style.width = '0%';
-    painelCriseEl.classList.add('is-active');
-
-    window.ATIVOS_EM_FALHA.forEach(function (a) {
-      if (!cronometrosFalha[a.id]) {
-        cronometrosFalha[a.id] = Date.now();
-      }
-    });
-  }
-
-  function sairModoCrise() {
-    emCrise = false;
-    cronometrosFalha = {};
-    painelCriseEl.classList.remove('is-active');
-    indiceAtual = 0;
-    inicioPainel = performance.now();
-    ativarPainel(indiceAtual);
-  }
-
-  function renderizarCartoesCrise() {
-    var wrap = document.getElementById('crise-cards');
-    var html = '';
-    window.ATIVOS_EM_FALHA.forEach(function (a) {
-      var inicio = cronometrosFalha[a.id] || Date.now();
-      var decorrido = Date.now() - inicio;
-      var mm = pad2(Math.floor(decorrido / 60000));
-      var ss = pad2(Math.floor((decorrido % 60000) / 1000));
-      html += '<div class="crise-card">' +
-        '<div class="crise-card__nome">' + a.nome + '</div>' +
-        '<div class="crise-card__local">' + a.local + '</div>' +
-        '<div class="crise-card__timer">' + mm + ':' + ss + '</div>' +
-      '</div>';
-    });
-    wrap.innerHTML = html;
-  }
-
-  function verificarFalhas() {
-    var temFalha = window.ATIVOS_EM_FALHA.length > 0;
-    if (temFalha && !emCrise) {
-      entrarModoCrise();
-    } else if (!temFalha && emCrise) {
-      sairModoCrise();
-    }
-    if (emCrise) renderizarCartoesCrise();
-  }
-
-  verificarFalhas();
-  setInterval(verificarFalhas, 5000);
-  setInterval(function () { if (emCrise) renderizarCartoesCrise(); }, 1000);
+  /* Re-renderiza o painel de alarmes críticos a cada 1s para o cronômetro
+     de cada card correr suavemente; os dados em si (window.ATIVOS_EM_FALHA)
+     só mudam a cada 5s, no poll de atualizarAlarmes(). */
+  setInterval(renderizarAlarmesCriticos, 1000);
 })();
 </script>
 </body>

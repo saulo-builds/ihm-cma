@@ -25,7 +25,10 @@ window.CMA = window.CMA || {};
     '/relatorios/resumo-mensal': { file: '/pages/relatorios/resumo-mensal.html', module: 'Relatórios', page: 'Resumo Mensal' },
     '/relatorios/indisponibilidade-linha': { file: '/pages/relatorios/indisponibilidade-linha.html', module: 'Relatórios', page: 'Indisp. por Linha' },
 
-    '/videowall': { file: '/pages/videowall/index.html', module: 'VideoWall', page: 'VideoWall' },
+    /* VideoWall NÃO tem rota aqui: é um documento HTML autônomo (próprio
+       <html>/<head>/<body>) que abre em nova aba via link direto no sidebar
+       (target="_blank" para /pages/videowall/index.html) — nunca deve ser
+       buscado e injetado dentro de #content pelo router. */
   };
 
   const state = { currentPath: '/' };
@@ -97,10 +100,14 @@ window.CMA = window.CMA || {};
     window.dispatchEvent(new CustomEvent('router:navigated', { detail: { path: resolvedPath, route } }));
   }
 
-  /* Delega cliques em qualquer link [data-route] (sidebar, atalhos internos etc.) */
+  /* Delega cliques em qualquer link [data-route] (sidebar, atalhos internos etc.).
+     Links com target="_blank" (ex.: VideoWall, documento HTML autônomo que não
+     pode ser injetado dentro do shell) são deixados para o navegador tratar de
+     verdade — sem isso, o preventDefault() abaixo cancelava a abertura em nova
+     aba e a página acabava injetada dentro de #content, com o sidebar por trás. */
   function onDocumentClick(event) {
     const link = event.target.closest('[data-route]');
-    if (!link) return;
+    if (!link || link.target === '_blank') return;
     event.preventDefault();
     const path = link.getAttribute('data-route');
     if (path === state.currentPath) return;
