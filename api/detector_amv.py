@@ -35,7 +35,7 @@ DISPOSITIVOS = ["AMV_TESTE"]  # adicionar "AMV_39B" quando pronto para producao
 
 CICLO_S = 1              # segundos entre cada ciclo do loop principal
 JANELA_INICIAL_S = 30    # segundos de historico buscados ao iniciar (recuperacao de estado)
-OFFLINE_TIMEOUT_S = 120  # segundos sem amostra nova -> Offline
+OFFLINE_TIMEOUT_S = int(os.getenv("OFFLINE_TIMEOUT_S", "120"))  # segundos sem amostra nova -> Offline
 
 # Gatilho de inicio de acionamento
 GATILHO_ACIONAMENTO = 3.0  # A - acima disso considera-se acionamento em curso

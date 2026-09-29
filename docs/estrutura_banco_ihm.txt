@@ -2,6 +2,7 @@
   ESTRUTURA DO BANCO DE DADOS — IHM CMA · CPTM Linha 10
   Schema: ihm (dentro do banco telemetria_amv · PostgreSQL 15)
   VM monitdev · 192.168.43.200
+  Última atualização: 10/09/2026
 ================================================================================
 
 CONVENÇÕES
@@ -122,87 +123,116 @@ CONVENÇÕES
 │  nome            │  VARCHAR(80) │  NN — ex: 'MDA-TAM-01'                   │
 │  mac_address     │  MACADDR     │  NN, UQ — endereço físico do dispositivo  │
 │  localidade_id   │  INTEGER     │  FK → ihm.localidades.id, nullable        │
-│  ultima_comun    │  TIMESTAMPTZ │  nullable — atualizado pelo integrador    │
 │  ativo           │  BOOLEAN     │  NN, DEF true                             │
 │  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
-│  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
-├──────────────────┴──────────────┴────────────────────────────────────────── ┤
-│  idx: mac_address (UQ), localidade_id                                       |
-|  NOTA: o MDA nao tem dispositivo_id -- esse ID pertence a cada             |
-|  sensor logico (equipamento) dentro do gateway.                            |
-|  Ver coluna dispositivo_id em ihm.equipamentos.                            |       │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: localidade_id                                                         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
-  DOMÍNIO: EQUIPAMENTOS (coração do sistema)
+  DOMÍNIO: MONITORAMENTO DE ATIVOS
 ================================================================================
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.fontes_dados                                                           │
+│  Origens dos dados de telemetria de cada ativo                             │
+│  Criada em: 10/09/2026 — usada pelo watchdog.py                            │
+├──────────────────────┬──────────────┬────────────────────────────────────────┤
+│  Coluna              │  Tipo        │  Restrições / Notas                     │
+├──────────────────────┼──────────────┼────────────────────────────────────────┤
+│  id                  │  SERIAL      │  PK                                     │
+│  nome                │  VARCHAR(80) │  NN — ex: 'PostgreSQL AMV / IHM'        │
+│  tipo                │  VARCHAR(30) │  NN — 'postgresql', 'mysql'             │
+│  host                │  VARCHAR(120)│  NN — ex: 'localhost', '192.168.43.200' │
+│  porta               │  INTEGER     │  NN — ex: 5432, 3306                    │
+│  banco               │  VARCHAR(80) │  NN — nome do banco de dados            │
+│  schema_tabela       │  VARCHAR(120)│  NN — ex: 'public.dados_monitoramento'  │
+│  coluna_dispositivo  │  VARCHAR(60) │  NN — coluna que identifica o ativo     │
+│  coluna_tempo        │  VARCHAR(60) │  NN — coluna de timestamp               │
+│  credencial_env      │  VARCHAR(80) │  NN — nome da var. de ambiente com URL  │
+│                      │              │       (ex: 'DATABASE_URL'). A senha      │
+│                      │              │       nunca é armazenada no banco.       │
+│  ativo               │  BOOLEAN     │  NN, DEF true                           │
+│  criado_em           │  TIMESTAMPTZ │  NN, DEF NOW()                          │
+├──────────────────────┴──────────────┴────────────────────────────────────────┤
+│  Registro atual (id=1): PostgreSQL AMV / IHM                                 │
+│    host: localhost · porta: 5432 · banco: telemetria_amv                     │
+│    schema_tabela: public.dados_monitoramento                                  │
+│    coluna_dispositivo: dispositivo_id · coluna_tempo: tempo                   │
+│    credencial_env: DATABASE_URL                                               │
+│                                                                               │
+│  Próximo registro (futuro): SCADA LTS (MySQL do Rafael/Wellington)            │
+│    credencial_env: SCADALTS_URL (a adicionar no .env da VM)                  │
+└──────────────────────┴──────────────┴────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │  ihm.equipamentos                                                           │
-│  Ativos monitorados — cada linha é um ativo do CMA                         │
+│  Ativos monitorados pela IHM                                                │
 ├──────────────────┬──────────────┬──────────────────────────────────────────┤
 │  Coluna          │  Tipo        │  Restrições / Notas                       │
 ├──────────────────┼──────────────┼──────────────────────────────────────────┤
 │  id              │  SERIAL      │  PK                                       │
-│  codigo          │  VARCHAR(30) │  NN, UQ — ex: 'AMV-BRS-01'                │
-│  nome            │  VARCHAR(150)│  NN — nome completo do ativo              │
-│  descricao       │  TEXT        │  nullable — o que ele monitora            │
+│  codigo          │  VARCHAR(30) │  NN, UQ — ex: 'AMV-BRS-01'               │
+│  nome            │  VARCHAR(100)│  NN — ex: 'Monitoramento AMV'             │
 │  tipo_id         │  INTEGER     │  FK → ihm.tipos_equipamento.id, NN        │
 │  localidade_id   │  INTEGER     │  FK → ihm.localidades.id, NN              │
 │  mda_id          │  INTEGER     │  FK → ihm.mdas.id, nullable               │
-| dispositivo_id   | VARCHAR(50)  | nullable, UQ -- ID do sensor logico no MQTT|
-|                  |              | ex: 'AMV_39B', 'TAM-ELE-01'               |
-|                  |              | PONTE com public.dados_monitoramento      |
 │  status_id       │  INTEGER     │  FK → ihm.status_operacional.id, NN       │
-│  maturidade      │  VARCHAR(20) │  NN — 'Concluído','Parcial','Implantação' │
-│  horario_op      │  VARCHAR(20) │  nullable — ex: '24h','06-22h'            │
-│  responsavel     │  VARCHAR(100)│  nullable — ex: 'GOT/CMA'                 │ 
-│  valor_atual     │  VARCHAR(50) │  nullable — leitura atual do sensor       │
-│  ultima_comun    │  TIMESTAMPTZ │  nullable — atualizado pela API           │
+│  dispositivo_id  │  VARCHAR(50) │  NN — ID usado na tabela de telemetria    │
+│                  │              │       ex: 'AMV_39B', 'AMV_TESTE'          │
+│  fonte_id        │  INTEGER     │  FK → ihm.fontes_dados.id                 │
+│                  │              │       Adicionado em 10/09/2026            │
+│                  │              │       Referencia onde buscar dados        │
+│  maturidade      │  VARCHAR(20) │  NN — 'Concluído','Parcial','Manutenção' │
+│  horario_op      │  VARCHAR(10) │  NN, DEF '24h'                            │
+│  responsavel     │  VARCHAR(80) │  nullable                                 │
+│  descricao       │  TEXT        │  nullable                                 │
 │  ativo           │  BOOLEAN     │  NN, DEF true                             │
 │  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
 │  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
-├──────────────────┴──────────────┴────────────────────────────────────────── ┤
-│idx: codigo (UQ), dispositivo_id (UQ), tipo_id, localidade_id, status_id, mda_id│
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  idx: status_id, localidade_id, dispositivo_id                              │
+│  Ativos com dados reais: AMV_39B (id=7), AMV_TESTE (id=9)                  │
+│  Demais 7 ativos: dados mockados, ficam Offline no watchdog                 │
 └─────────────────────────────────────────────────────────────────────────────┘
-
-================================================================================
-  DOMÍNIO: EVENTOS E HISTÓRICO
-================================================================================
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ihm.historico_status                                                       │
-│  Registro de cada mudança de status de um equipamento                      │
+│  Registro de todas as mudanças de status dos ativos                        │
 ├──────────────────┬──────────────┬──────────────────────────────────────────┤
 │  Coluna          │  Tipo        │  Restrições / Notas                       │
 ├──────────────────┼──────────────┼──────────────────────────────────────────┤
-│  id              │  BIGSERIAL   │  PK — BIGSERIAL pois pode crescer muito   │
+│  id              │  SERIAL      │  PK                                       │
 │  equipamento_id  │  INTEGER     │  FK → ihm.equipamentos.id, NN             │
 │  status_ant_id   │  INTEGER     │  FK → ihm.status_operacional.id, nullable │
 │  status_novo_id  │  INTEGER     │  FK → ihm.status_operacional.id, NN       │
-│  usuario_id      │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
-│  observacao      │  TEXT        │  nullable — anotação do operador          │
-│  origem          │  VARCHAR(20) │  NN — 'manual','api','sistema'            │
-│  ocorrido_em     │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  origem          │  VARCHAR(20) │  NN — 'sistema' (watchdog/detector)       │
+│                  │              │       ou 'usuario' (operador)             │
+│  criado_em       │  TIMESTAMPTZ │  NN, DEF NOW()                            │
 ├──────────────────┴──────────────┴──────────────────────────────────────────┤
-│  idx: equipamento_id + ocorrido_em DESC (composto — queries de histórico)  │
+│  idx: equipamento_id, criado_em DESC                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ihm.alarmes                                                                │
-│  Eventos de alarme ativos e histórico completo                              │
+│  Alarmes gerados pelo sistema ou operadores                                 │
 ├──────────────────┬──────────────┬──────────────────────────────────────────┤
 │  Coluna          │  Tipo        │  Restrições / Notas                       │
 ├──────────────────┼──────────────┼──────────────────────────────────────────┤
-│  id              │  BIGSERIAL   │  PK                                       │
+│  id              │  SERIAL      │  PK                                       │
 │  equipamento_id  │  INTEGER     │  FK → ihm.equipamentos.id, NN             │
-│  tipo            │  VARCHAR(50) │  NN — 'Falha Operacional','Maturidade     │
-│                  │              │       Parcial','Manutenção','Comunicação' │
+│  tipo            │  VARCHAR(50) │  NN — 'Falha Operacional'                 │
+│                  │              │       'Falha de Comunicacao' (watchdog)   │
+│                  │              │       'Maturidade Parcial'                │
 │  criticidade     │  VARCHAR(20) │  NN — 'Crítico','Alerta','Normal'         │
 │  titulo          │  VARCHAR(150)│  NN — resumo do alarme                    │
-│  descricao       │  TEXT        │  nullable — detalhes                      │
+│  descricao       │  TEXT        │  nullable — detalhes e último contato     │
 │  iniciado_em     │  TIMESTAMPTZ │  NN, DEF NOW()                            │
 │  resolvido_em    │  TIMESTAMPTZ │  nullable — NULL = alarme ainda ativo     │
+│                  │              │       Alarmes de comunicação: fechados     │
+│                  │              │       automaticamente pelo watchdog        │
+│                  │              │       Alarmes operacionais: fechados       │
+│                  │              │       manualmente pelo operador            │
 │  reconhecido_em  │  TIMESTAMPTZ │  nullable                                 │
 │  reconhecido_por │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
 │  resolvido_por   │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
@@ -210,7 +240,37 @@ CONVENÇÕES
 ├──────────────────┴──────────────┴──────────────────────────────────────────┤
 │  idx: equipamento_id, iniciado_em DESC, resolvido_em (NULL = ativo)        │
 │  Query alarmes ativos: WHERE resolvido_em IS NULL                           │
+│  Alarmes de comunicação duplicados: impedidos pela verificação              │
+│    WHERE tipo = 'Falha de Comunicacao' AND resolvido_em IS NULL             │
 └─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ihm.supressoes                                                             │
+│  Supressão intencional de alarmes por equipamento                          │
+│  Criada em: 12/09/2026 — usada pelo watchdog.py e API FastAPI              │
+├──────────────────┬──────────────┬──────────────────────────────────────────┤
+│  Coluna          │  Tipo        │  Restrições / Notas                       │
+├──────────────────┼──────────────┼──────────────────────────────────────────┤
+│  id              │  SERIAL      │  PK                                       │
+│  equipamento_id  │  INTEGER     │  FK → ihm.equipamentos.id, NN             │
+│  motivo          │  VARCHAR(200)│  NN — justificativa da supressão          │
+│  suprimido_por   │  INTEGER     │  FK → ihm.usuarios.id, NN                 │
+│  suprimido_em    │  TIMESTAMPTZ │  NN, DEF NOW()                            │
+│  expira_em       │  TIMESTAMPTZ │  nullable — NULL = indefinido             │
+│  cancelado_em    │  TIMESTAMPTZ │  nullable — NULL = supressão ainda ativa  │
+│  cancelado_por   │  INTEGER     │  FK → ihm.usuarios.id, nullable           │
+├──────────────────┴──────────────┴──────────────────────────────────────────┤
+│  Supressão ativa: cancelado_em IS NULL                                      │
+│    AND (expira_em IS NULL OR expira_em > NOW())                             │
+│  Diferença de reconhecer/resolver: supressão não fecha o alarme —          │
+│  silencia notificações enquanto vigente. Alarme permanece no histórico.    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+VIEW: ihm.supressoes_ativas
+  Retorna apenas supressões vigentes (não canceladas e não expiradas).
+  Criada em: 12/09/2026
+  Usada por: watchdog.py (verificação antes de abrir alarme)
+             API FastAPI (GET /api/equipamentos/{id}/supressao)
 
 ================================================================================
   DOMÍNIO: NOTIFICAÇÕES
@@ -249,15 +309,16 @@ ihm.usuarios ──────────────────────�
     │ 1:N (reconhecido_por / resolvido_por)
     └──────────────────────────────┐
                                    ↓
-ihm.linhas ──────── 1:N ──── ihm.localidades ─── 1:N ─── ihm.equipamentos
-                                   │                           │
-                              1:N  │                      FK ─┤─ tipo_id
-                                   ↓                     FK ─┤─ status_id
-                              ihm.mdas ──── 1:N ──── mda_id ─┘
-                                                         │
-                                              1:N        │
-                                              ↓          │
-                                   ihm.historico_status ─┘
+ihm.linhas ──── 1:N ──── ihm.localidades ─── 1:N ─── ihm.equipamentos
+                               │                           │
+                          1:N  │                      FK ─┤─ tipo_id
+                               ↓                     FK ─┤─ status_id
+                          ihm.mdas ──── 1:N ──── mda_id ─┤
+                                                     FK ─┤─ fonte_id ──── ihm.fontes_dados
+                                                          │
+                                              1:N         │
+                                              ↓           │
+                                   ihm.historico_status ──┘
                                               │
                                    ihm.alarmes ──── equipamento_id
 
@@ -268,25 +329,48 @@ ihm.grupos_notificacao ─── N:N ─── ihm.membros_notificacao ───
 ================================================================================
 
   Schema: ihm
-  ┌────────────────────────┬──────────┬────────────────────────────────────┐
-  │  Tabela                │  Linhas  │  Papel                             │
-  │                        │  iniciais│                                    │
-  ├────────────────────────┼──────────┼────────────────────────────────────┤
-  │  perfis                │  2       │  Administrador, Operador CMA       │
-  │  usuarios              │  3       │  Saulo, Wellingto, Fernando        │
-  │  status_operacional    │  5       │  Online, Alerta, Crítico, ...      │
-  │  tipos_equipamento     │  5       │  Fibra, Energia, Sinalização, ...  │
-  │  linhas                │  1       │  L10 — Turquesa                    │
-  │  localidades           │  5       │  Tamanduatei, Brás, LUZ, ...      │
-  │  mdas                  │  3       │  MDA-TAM-01, MDA-BRS-01, ...      │
-  │  equipamentos          │  8       │  Os 8 ativos reais do CMA         │
-  │  historico_status      │  0       │  Cresce a cada mudança de status   │
-  │  alarmes               │  2       │  Os 2 alarmes de maturidade parcial│
-  │  grupos_notificacao    │  2       │  GOT-CMA Operação, Manutenção      │
-  │  membros_notificacao   │  5       │  Membros dos grupos                │
-  └────────────────────────┴──────────┴────────────────────────────────────┘
+  ┌────────────────────────┬──────────┬────────────────────────────────────────┐
+  │  Tabela                │  Linhas  │  Papel                                 │
+  │                        │  iniciais│                                        │
+  ├────────────────────────┼──────────┼────────────────────────────────────────┤
+  │  perfis                │  2       │  Administrador, Operador CMA           │
+  │  usuarios              │  3       │  Saulo, Wellingto, Fernando            │
+  │  status_operacional    │  5       │  Online, Alerta, Crítico, Offline, ... │
+  │  tipos_equipamento     │  5       │  Fibra, Energia, Sinalização, ...      │
+  │  linhas                │  1       │  L10 — Turquesa                        │
+  │  localidades           │  5       │  Tamanduatei, Brás, LUZ, ...          │
+  │  mdas                  │  3       │  MDA-TAM-01, MDA-BRS-01, ...          │
+  │  fontes_dados          │  1       │  PostgreSQL AMV / IHM (id=1)           │
+  │                        │          │  Criada em 10/09/2026                  │
+  │  equipamentos          │  9       │  9 ativos cadastrados                  │
+  │                        │          │  2 com dados reais (AMV_39B, AMV_TESTE)│
+  │  historico_status      │  —       │  Cresce a cada mudança de status       │
+  │  alarmes               │  37+     │  Alarmes operacionais e de comunicação │
+  │  supressoes            │  0       │  Supressões ativas por equipamento     │
+  │  grupos_notificacao    │  2       │  GOT-CMA Operação, Manutenção          │
+  │  membros_notificacao   │  5       │  Membros dos grupos                    │
+  └────────────────────────┴──────────┴────────────────────────────────────────┘
 
-  Total: 12 tabelas · Schema ihm · Banco telemetria_amv · PostgreSQL 15
+  Total: 14 tabelas · Schema ihm · Banco telemetria_amv · PostgreSQL 15
+
+================================================================================
+  COMPONENTES QUE ESCREVEM NO BANCO IHM
+================================================================================
+
+  detector_amv.py   → ihm.alarmes (tipo: 'Falha Operacional')
+                    → ihm.equipamentos (status_id)
+                    → ihm.historico_status
+
+  watchdog.py       → ihm.alarmes (tipo: 'Falha de Comunicacao')
+                    → ihm.equipamentos (status_id)
+                    → ihm.historico_status
+                    Lê: ihm.equipamentos JOIN ihm.fontes_dados
+                    Lê: public.dados_monitoramento (ou fonte configurada)
+
+  API FastAPI       → ihm.alarmes (reconhecido_em, resolvido_em)
+                    → ihm.usuarios (ultimo_acesso)
+
+  IHM-CMA frontend → apenas leitura (polling a cada 10s)
 
 ================================================================================
   DADOS INICIAIS (seed) — executar uma vez após criar o schema
@@ -317,6 +401,13 @@ INSERT INTO ihm.tipos_equipamento (nome, descricao, cor_hex) VALUES
 INSERT INTO ihm.linhas (codigo, nome, cor_hex) VALUES
   ('L10', 'Linha 10 — Turquesa', '#00A89D');
 
+-- Fonte de dados inicial (PostgreSQL AMV / IHM)
+INSERT INTO ihm.fontes_dados
+  (nome, tipo, host, porta, banco, schema_tabela, coluna_dispositivo, coluna_tempo, credencial_env)
+VALUES
+  ('PostgreSQL AMV / IHM', 'postgresql', 'localhost', 5432, 'telemetria_amv',
+   'public.dados_monitoramento', 'dispositivo_id', 'tempo', 'DATABASE_URL');
+
 ================================================================================
-  CPTM · GOT · CMA — Estrutura do Banco de Dados IHM · Agosto/2026
+  CPTM · GOT · CMA — Estrutura do Banco de Dados IHM · Setembro/2026
 ================================================================================
