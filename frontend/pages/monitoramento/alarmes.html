@@ -181,8 +181,20 @@
     display: none;
   }
 
-  .alarm-card:not(.is-ack) .btn-resolver {
+  .alarm-card:not(.is-ack) .btn-normalizar {
     display: none;
+  }
+
+  /* ===== Aba Suprimidos ===== */
+  .supr-motivo {
+    max-width: 320px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+
+  .supr-expira-indef {
+    color: var(--supr-hi);
+    font-weight: 600;
   }
 
   /* ===== Bloco 4 — Aba Histórico ===== */
@@ -284,6 +296,7 @@
   <!-- ===== Bloco 1 — Abas ===== -->
   <div class="tabs">
     <button type="button" class="tab-btn active" data-tab="ativos">Ativos (<span id="tab-ativos-count">0</span>)</button>
+    <button type="button" class="tab-btn" data-tab="suprimidos">Suprimidos (<span id="tab-suprimidos-count">0</span>)</button>
     <button type="button" class="tab-btn" data-tab="historico">Histórico</button>
   </div>
 
@@ -296,12 +309,43 @@
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="8 12.5 10.8 15.5 16 9.5"></polyline>
       </svg>
-      <span>Nenhuma falha operacional ativa — todos os ativos estão online</span>
+      <span>Nenhuma falha operacional ativa — todos os ativos estão online<span id="alarm-banner-supr"></span></span>
     </div>
 
     <!-- Cards de alarme ativo — renderizados via JS -->
     <div class="alarm-grid" id="alarm-grid"></div>
     <div class="table-empty" id="alarm-grid-empty" hidden>Nenhum alarme ativo no momento.</div>
+  </div>
+
+  <!-- ===== Aba Suprimidos — supressões vigentes (sem reconhecer por aqui) ===== -->
+  <div class="tab-panel" id="tab-suprimidos">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Equipamentos suprimidos</div>
+          <div class="card-subtitle">Alarmes desses equipamentos não aparecem em Ativos, no sino nem no VideoWall</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="table" id="supr-table">
+            <thead>
+              <tr>
+                <th>Equipamento</th>
+                <th>Motivo</th>
+                <th>Suprimido por</th>
+                <th>Desde</th>
+                <th>Expira em</th>
+                <th>Alarmes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="supr-tbody"></tbody>
+          </table>
+          <div class="table-empty" id="supr-empty" hidden>Nenhum equipamento suprimido no momento.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== Aba Histórico ===== -->
@@ -411,6 +455,7 @@
   var tabBtns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
   var panels = {
     ativos: document.getElementById('tab-ativos'),
+    suprimidos: document.getElementById('tab-suprimidos'),
     historico: document.getElementById('tab-historico')
   };
 
@@ -422,7 +467,7 @@
       Object.keys(panels).forEach(function (key) {
         panels[key].classList.toggle('active', key === tab);
       });
-      if (tab === 'ativos') {
+      if (tab === 'ativos' || tab === 'suprimidos') {
         iniciarPollingAtivos();
       } else {
         pararPollingAtivos();
@@ -430,13 +475,15 @@
     });
   });
 
-  /* ===== Polling automático da aba Ativos (10s) ===== */
+  /* ===== Polling automático das abas Ativos e Suprimidos (10s) =====
+     As duas são recarregadas juntas: quando uma supressão expira, o alarme
+     volta para Ativos e sai de Suprimidos no mesmo ciclo (a API decide). */
   var POLL_MS = 10000;
   var pollIntervalId = null;
 
   function iniciarPollingAtivos() {
     if (pollIntervalId) return;
-    pollIntervalId = setInterval(function () { carregarAtivos(); }, POLL_MS);
+    pollIntervalId = setInterval(function () { recarregarOperacao(); }, POLL_MS);
   }
 
   function pararPollingAtivos() {
@@ -461,7 +508,25 @@
   var alarmBannerOk = document.getElementById('alarm-banner-ok');
   var tabAtivosCount = document.getElementById('tab-ativos-count');
 
+  /* Falha de comunicação é fechada automaticamente pelo watchdog quando a
+     comunicação volta — o operador só pode Reconhecer e Suprimir.
+     Exceção: alarme órfão de equipamento desativado (o watchdog não o
+     monitora mais) pode ser normalizado pelo Administrador. A API valida
+     a mesma regra (403/409). */
+  var TIPO_COMUNICACAO = 'Falha de Comunicacao';
+
+  function podeNormalizar(alarme) {
+    if (alarme.tipo !== TIPO_COMUNICACAO) return true;
+    return window.CMA.api.ehAdmin() && !!alarme.equipamento && alarme.equipamento.ativo === false;
+  }
+
+  /* Alarmes da última carga, por id — usados pelos botões do card */
+  var alarmesPorId = {};
+
   function renderAtivos(alarmes) {
+    alarmesPorId = {};
+    alarmes.forEach(function (a) { alarmesPorId[a.id] = a; });
+
     tabAtivosCount.textContent = String(alarmes.length);
 
     /* Falha operacional = alarme com criticidade diferente de "Normal" (informacional) */
@@ -495,47 +560,119 @@
         '</div>' +
         '<div class="alarm-card__actions">' +
         ackTag +
-        (a.reconhecido
-          ? '<button type="button" class="btn btn-ghost btn-sm btn-resolver" data-id="' + a.id + '">Resolver</button>'
+        (a.reconhecido && podeNormalizar(a)
+          ? '<button type="button" class="btn btn-ghost btn-sm btn-normalizar" data-id="' + a.id + '">Normalizar</button>'
           : '') +
-        '<button type="button" class="btn btn-ghost btn-sm" data-route="/tabela">Ver ativo</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm btn-suprimir" data-id="' + a.id + '">Suprimir</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm btn-ver-ativo" data-id="' + a.id + '" data-route="/tabela">Ver ativo</button>' +
         '</div>' +
         '</div>'
       );
     }).join('');
-
-    /* Delega clique nos botões "Reconhecer" recém-criados */
-    alarmGrid.querySelectorAll('.btn-reconhecer').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = btn.getAttribute('data-id');
-        btn.disabled = true;
-        window.CMA.api.reconhecerAlarme(id)
-          .then(function () {
-            return carregarAtivos();
-          })
-          .catch(function (err) {
-            btn.disabled = false;
-            window.alert(err.message);
-          });
-      });
-    });
-
-    /* Delega clique nos botões "Resolver" recém-criados */
-    alarmGrid.querySelectorAll('.btn-resolver').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = btn.getAttribute('data-id');
-        btn.disabled = true;
-        window.CMA.api.resolverAlarme(id, null)
-          .then(function () {
-            return carregarAtivos();
-          })
-          .catch(function (err) {
-            btn.disabled = false;
-            window.alert(err.message);
-          });
-      });
-    });
   }
+
+  /* Delegação única de cliques nos botões dos cards (o grid é re-renderizado
+     a cada poll, então o listener fica no container, não nos botões) */
+  alarmGrid.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('button[data-id]');
+    if (!btn) return;
+    var alarme = alarmesPorId[btn.getAttribute('data-id')];
+    if (!alarme) return;
+
+    if (btn.classList.contains('btn-reconhecer')) {
+      btn.disabled = true;
+      window.CMA.api.reconhecerAlarme(alarme.id)
+        .then(function () { return carregarAtivos(); })
+        .catch(function (err) {
+          btn.disabled = false;
+          window.alert(err.message);
+        });
+    } else if (btn.classList.contains('btn-normalizar')) {
+      window.CMA.confirmar({
+        titulo: 'Normalizar alarme',
+        mensagem: 'Confirma que a condição deste equipamento foi normalizada?',
+        textoConfirmar: 'Normalizar'
+      }).then(function (ok) {
+        if (!ok) return;
+        btn.disabled = true;
+        return window.CMA.api.normalizarAlarme(alarme.id, null)
+          .then(function () { return carregarAtivos(); })
+          .catch(function (err) {
+            btn.disabled = false;
+            window.alert(err.message);
+          });
+      });
+    } else if (btn.classList.contains('btn-suprimir')) {
+      window.CMA.abrirDialogoSupressao(alarme.equipamento).then(function (supressao) {
+        if (supressao) recarregarOperacao();
+      });
+    } else if (btn.classList.contains('btn-ver-ativo')) {
+      /* O router não carrega query string — a tabela lê este filtro uma vez
+         ao abrir. A navegação em si segue pelo data-route do botão. */
+      window.CMA.tabelaFiltroInicial = { id: alarme.equipamento.id };
+    }
+  });
+
+  /* ===== Aba Suprimidos ===== */
+  var suprTbody = document.getElementById('supr-tbody');
+  var suprEmpty = document.getElementById('supr-empty');
+  var tabSuprimidosCount = document.getElementById('tab-suprimidos-count');
+  var alarmBannerSupr = document.getElementById('alarm-banner-supr');
+
+  function renderSuprimidos(lista) {
+    tabSuprimidosCount.textContent = String(lista.length);
+    alarmBannerSupr.textContent = lista.length
+      ? ' · ' + lista.length + (lista.length === 1 ? ' equipamento suprimido' : ' equipamentos suprimidos')
+      : '';
+
+    suprEmpty.hidden = lista.length !== 0;
+    suprTbody.parentElement.hidden = lista.length === 0;
+
+    var admin = window.CMA.api.ehAdmin();
+    suprTbody.innerHTML = lista.map(function (s) {
+      var expira = s.expira_em
+        ? escapeHtml(formatarDataHora(s.expira_em))
+        : '<span class="supr-expira-indef">Sem prazo</span>';
+      return (
+        '<tr>' +
+        '<td class="hi">' + escapeHtml(s.equipamento_nome) +
+        (s.dispositivo_id ? ' <span class="td-mono">(' + escapeHtml(s.dispositivo_id) + ')</span>' : '') +
+        '<div class="alarm-card__local">' + escapeHtml(s.localidade_nome) + '</div></td>' +
+        '<td class="supr-motivo">' + escapeHtml(s.motivo) + '</td>' +
+        '<td>' + escapeHtml(s.suprimido_por_nome || '--') + '</td>' +
+        '<td>' + escapeHtml(formatarDataHora(s.suprimido_em)) + '</td>' +
+        '<td>' + expira + '</td>' +
+        '<td class="td-mono">' + escapeHtml(s.alarmes_ativos) + '</td>' +
+        /* Sem prazo: só o Administrador cancela (API responde 403 aos demais) */
+        '<td>' + (s.expira_em || admin
+          ? '<button type="button" class="btn btn-ghost btn-sm btn-cancelar-supr" data-equip-id="' +
+            s.equipamento_id + '" data-nome="' + escapeHtml(s.equipamento_nome) + '">Cancelar supressão</button>'
+          : '') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  suprTbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('.btn-cancelar-supr');
+    if (!btn) return;
+    window.CMA.confirmar({
+      titulo: 'Cancelar supressão',
+      mensagem: 'Cancelar a supressão de "' + btn.getAttribute('data-nome') +
+        '"? Os alarmes ativos deste equipamento voltam a aparecer imediatamente.',
+      textoConfirmar: 'Cancelar supressão',
+      perigo: true
+    }).then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true;
+      return window.CMA.api.cancelarSupressao(btn.getAttribute('data-equip-id'))
+        .then(function () { return recarregarOperacao(); })
+        .catch(function (err) {
+          btn.disabled = false;
+          window.alert(err.message);
+        });
+    });
+  });
 
   /* ===== Bloco 4 — histórico de alarmes ===== */
   var histTbody = document.getElementById('hist-tbody');
@@ -596,6 +733,17 @@
     });
   }
 
+  function carregarSuprimidos() {
+    return window.CMA.api.getSupressoes().then(renderSuprimidos);
+  }
+
+  /* Ativos + Suprimidos juntos (poll e após suprimir/cancelar) */
+  function recarregarOperacao() {
+    return Promise.all([carregarAtivos(), carregarSuprimidos()]).catch(function (err) {
+      console.error('[alarmes] falha ao atualizar', err);
+    });
+  }
+
   function carregarHistorico() {
     return window.CMA.api.getAlarmes(false).then(function (lista) {
       historicoCompleto = lista;
@@ -605,11 +753,11 @@
 
   function carregar() {
     mostrarLoading();
-    Promise.all([carregarAtivos(), carregarHistorico()])
+    Promise.all([carregarAtivos(), carregarSuprimidos(), carregarHistorico()])
       .then(function () {
         mostrarConteudo();
         var tabAtiva = document.querySelector('.tab-btn.active');
-        if (tabAtiva && tabAtiva.getAttribute('data-tab') === 'ativos') {
+        if (tabAtiva && tabAtiva.getAttribute('data-tab') !== 'historico') {
           iniciarPollingAtivos();
         }
       })

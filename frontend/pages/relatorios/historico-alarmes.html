@@ -468,7 +468,7 @@
         '<td>' + escapeHtml(a.titulo) + '</td>' +
         '<td>' + escapeHtml(a.descricao) + '</td>' +
         '<td>' + escapeHtml(a.reconhecido_por_nome || '—') + '</td>' +
-        '<td>' + escapeHtml(formatarDuracao(a.iniciado_em, a.resolvido_em)) + '</td>' +
+        '<td>' + escapeHtml(formatarDuracao(a.iniciado_em, a.normalizado_em)) + '</td>' +
         '</tr>';
     }).join('');
 
@@ -570,7 +570,7 @@
         a.titulo,
         a.descricao || '',
         a.reconhecido_por_nome || '—',
-        formatarDuracao(a.iniciado_em, a.resolvido_em)
+        formatarDuracao(a.iniciado_em, a.normalizado_em)
       ].join(';'));
     });
     var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });

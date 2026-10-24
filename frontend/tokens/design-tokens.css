@@ -41,6 +41,11 @@
   --parcial-lo: #160F28;
   --parcial-hi: #BFA0E8;
 
+  /* Alarme suprimido (ISA-18.2) — neutro, visível mas não alarmante */
+  --supr: #4A6A8A;
+  --supr-lo: #111C2A;
+  --supr-hi: #9DB8D4;
+
   /* Módulos — cor de acento da sidebar */
   --mon: #1A6EC2; /* Monitoramento */
   --cad: #2E7D32; /* Cadastro */

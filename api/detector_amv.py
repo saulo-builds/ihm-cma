@@ -31,7 +31,7 @@ DATABASE_URL = os.getenv(
 )
 
 # Dispositivos monitorados
-DISPOSITIVOS = ["AMV_TESTE"]  # adicionar "AMV_39B" quando pronto para producao
+DISPOSITIVOS = ["AMV_TESTE"]  # adicionar "AMV39A-BAS" quando pronto para producao
 
 CICLO_S = 1              # segundos entre cada ciclo do loop principal
 JANELA_INICIAL_S = 30    # segundos de historico buscados ao iniciar (recuperacao de estado)

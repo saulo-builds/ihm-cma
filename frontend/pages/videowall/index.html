@@ -849,6 +849,28 @@
     color: #ffffff;
     margin-top: 8px;
   }
+
+  .alarme-card__disp {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: #ffdada;
+  }
+
+  /* Contador de equipamentos suprimidos (ISA-18.2: suprimidos continuam
+     visíveis em algum lugar). Discreto: cor neutra, sem animação. */
+  .vw-supr-contador {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    z-index: 50;
+    padding: 6px 12px;
+    background: var(--supr-lo);
+    border: 1px solid var(--supr);
+    border-radius: var(--radius-sm);
+    color: var(--supr-hi);
+    font-size: 13px;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -1103,6 +1125,10 @@
      Vazio + sem classe de layout = display: none (ver CSS). ===== -->
 <div class="alarmes-painel" id="alarmes-painel"></div>
 
+<!-- ===== Contador discreto de equipamentos suprimidos — oculto quando zero.
+     Alimentado pelo campo "suprimido" de CMA.api.getEquipamentos(). ===== -->
+<div class="vw-supr-contador" id="vw-supr-contador" hidden></div>
+
 <!-- ===== JS do VideoWall — dados, carrossel, relógio, gauge, alarmes críticos ===== -->
 <script>
 /* Alarmes críticos ativos no momento — array vazio quando não há nenhum.
@@ -1113,9 +1139,10 @@
    window.ATIVOS_EM_FALHA, nunca uma referência local capturada no
    momento em que a IIFE foi criada.
    Em operação normal ela é alimentada a cada 5s por atualizarAlarmes(),
-   que busca os alarmes ativos na API e filtra os de criticidade
-   'Critico' sem resolvido_em; cada item vira
-   { id, nome, local, titulo, iniciado_em } — o contrato que
+   que busca os alarmes ativos na API (já sem os de equipamentos
+   suprimidos — mesma fonte da aba Ativos e do sino) e filtra os de
+   criticidade 'Critico'; cada item vira
+   { id, nome, dispositivo_id, local, titulo, iniciado_em } — o contrato que
    renderizarAlarmesCriticos() (mais abaixo) usa para desenhar o painel
    de notificação. O carrossel nunca para por causa dela. */
 window.ATIVOS_EM_FALHA = [];
@@ -1203,7 +1230,7 @@ window.ATIVOS_EM_FALHA = [];
 
   /* ================================================================
      Painel 2, Card 6 — telemetria AMV, a partir de
-     CMA.api.getTelemetriaAMV('AMV_39B'). Campos numéricos podem vir
+     CMA.api.getTelemetriaAMV('AMV39A-BAS'). Campos numéricos podem vir
      null; formatarValor() mostra "--" nesse caso em vez de "null"/NaN.
   ================================================================= */
   function formatarValor(v, unidade, casas) {
@@ -1272,7 +1299,9 @@ window.ATIVOS_EM_FALHA = [];
       var decorrido = Date.now() - inicio;
       html += '<div class="alarme-card">' +
         '<div class="alarme-card__cabecalho"><span aria-hidden="true">⚠</span> Alarme Crítico</div>' +
-        '<div class="alarme-card__nome">' + escapeHtml(a.nome) + '</div>' +
+        '<div class="alarme-card__nome">' + escapeHtml(a.nome) +
+          (a.dispositivo_id ? ' <span class="alarme-card__disp">(' + escapeHtml(a.dispositivo_id) + ')</span>' : '') +
+        '</div>' +
         '<div class="alarme-card__local">' + escapeHtml(a.local) + '</div>' +
         '<div class="alarme-card__titulo">' + escapeHtml(a.titulo) + '</div>' +
         '<div class="alarme-card__timer">' + formatarCronometro(decorrido) + '</div>' +
@@ -1292,12 +1321,13 @@ window.ATIVOS_EM_FALHA = [];
   function atualizarAlarmes() {
     return CMA.api.getAlarmes(true).then(function (alarmes) {
       var criticos = (alarmes || []).filter(function (a) {
-        return a.criticidade === 'Critico' && !a.resolvido_em;
+        return a.criticidade === 'Critico';
       });
       window.ATIVOS_EM_FALHA = criticos.map(function (a) {
         return {
           id: a.id,
           nome: (a.equipamento && a.equipamento.nome) || a.titulo || 'Ativo',
+          dispositivo_id: (a.equipamento && a.equipamento.dispositivo_id) || '',
           local: (a.equipamento && a.equipamento.local) || '',
           titulo: a.titulo || '',
           iniciado_em: a.iniciado_em || null
@@ -1307,6 +1337,13 @@ window.ATIVOS_EM_FALHA = [];
     }).catch(function (err) {
       console.error('[VideoWall] Falha ao buscar alarmes:', err.message);
     });
+  }
+
+  function renderContadorSuprimidos(equipamentos) {
+    var el = document.getElementById('vw-supr-contador');
+    var qtd = (equipamentos || []).filter(function (eq) { return eq.suprimido; }).length;
+    el.hidden = qtd === 0;
+    el.textContent = qtd + (qtd === 1 ? ' equipamento suprimido' : ' equipamentos suprimidos');
   }
 
   function atualizarDashboard() {
@@ -1321,13 +1358,14 @@ window.ATIVOS_EM_FALHA = [];
   function atualizarEquipamentos() {
     return CMA.api.getEquipamentos().then(function (equipamentos) {
       renderGeoLista(equipamentos);
+      renderContadorSuprimidos(equipamentos);
     }).catch(function (err) {
       console.error('[VideoWall] Falha ao buscar equipamentos:', err.message);
     });
   }
 
   function atualizarTelemetriaAMV() {
-    return CMA.api.getTelemetriaAMV('AMV_39B').then(function (dados) {
+    return CMA.api.getTelemetriaAMV('AMV39A-BAS').then(function (dados) {
       renderTelemetriaAMV(dados);
     }).catch(function (err) {
       console.error('[VideoWall] Falha ao buscar telemetria AMV:', err.message);

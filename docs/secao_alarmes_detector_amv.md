@@ -84,12 +84,12 @@ RECONHECIDO (reconhecido_em preenchido, resolvido_em IS NULL)
   → registra ciência, mas falha ainda pode persistir
   → ainda aparece em "Alarmes Ativos"
 
-RESOLVIDO (resolvido_em preenchido)
-  → operador clicou "Resolver" após confirmação da equipe de campo
+NORMALIZADO (resolvido_em preenchido)
+  → operador clicou "Normalizar" após confirmação da equipe de campo
   → sai de "Alarmes Ativos", permanece no "Histórico"
 ```
 
-> **Importante:** O detector **nunca fecha alarmes automaticamente**. Um acionamento normal após uma falha atualiza o status do equipamento para Online, mas **não resolve o alarme**. O fechamento é sempre manual — o operador resolve após confirmação da equipe de campo de que a causa foi eliminada.
+> **Importante:** O detector **nunca fecha alarmes automaticamente**. Um acionamento normal após uma falha atualiza o status do equipamento para Online, mas **não normaliza o alarme**. O fechamento é sempre manual — o operador normaliza após confirmação da equipe de campo de que a causa foi eliminada.
 
 #### Por que não fechar automaticamente
 
@@ -119,7 +119,7 @@ O fechamento automático criaria uma janela de risco em que o sistema indica "tu
                       ↓
 [CAMPO]          Equipe verifica e corrige a causa
                       ↓
-[OPERADOR]       Confirma resolução → clica "Resolver" na IHM
+[OPERADOR]       Confirma normalização → clica "Normalizar" na IHM
                       ↓
 [IHM — HISTÓRICO] Alarme permanece registrado com timestamps completos
 ```
@@ -197,7 +197,7 @@ LIMIT 20;
 -- Status atual dos equipamentos
 SELECT nome, dispositivo_id, status_id
 FROM ihm.equipamentos
-WHERE dispositivo_id IN ('AMV_39B', 'AMV_TESTE');
+WHERE dispositivo_id IN ('AMV39A-BAS', 'AMV_TESTE');
 
 -- Fechar alarmes de teste manualmente
 UPDATE ihm.alarmes

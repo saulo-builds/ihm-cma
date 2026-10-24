@@ -179,7 +179,7 @@ CONVENÇÕES
 │  mda_id          │  INTEGER     │  FK → ihm.mdas.id, nullable               │
 │  status_id       │  INTEGER     │  FK → ihm.status_operacional.id, NN       │
 │  dispositivo_id  │  VARCHAR(50) │  NN — ID usado na tabela de telemetria    │
-│                  │              │       ex: 'AMV_39B', 'AMV_TESTE'          │
+│                  │              │       ex: 'AMV39A-BAS', 'AMV_TESTE'          │
 │  fonte_id        │  INTEGER     │  FK → ihm.fontes_dados.id                 │
 │                  │              │       Adicionado em 10/09/2026            │
 │                  │              │       Referencia onde buscar dados        │
@@ -192,7 +192,7 @@ CONVENÇÕES
 │  atualizado_em   │  TIMESTAMPTZ │  NN, DEF NOW()                            │
 ├──────────────────┴──────────────┴──────────────────────────────────────────┤
 │  idx: status_id, localidade_id, dispositivo_id                              │
-│  Ativos com dados reais: AMV_39B (id=7), AMV_TESTE (id=9)                  │
+│  Ativos com dados reais: AMV39A-BAS (id=7), AMV_TESTE (id=9)                  │
 │  Demais 7 ativos: dados mockados, ficam Offline no watchdog                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -262,7 +262,7 @@ CONVENÇÕES
 ├──────────────────┴──────────────┴──────────────────────────────────────────┤
 │  Supressão ativa: cancelado_em IS NULL                                      │
 │    AND (expira_em IS NULL OR expira_em > NOW())                             │
-│  Diferença de reconhecer/resolver: supressão não fecha o alarme —          │
+│  Diferença de reconhecer/normalizar: supressão não fecha o alarme —        │
 │  silencia notificações enquanto vigente. Alarme permanece no histórico.    │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -343,7 +343,7 @@ ihm.grupos_notificacao ─── N:N ─── ihm.membros_notificacao ───
   │  fontes_dados          │  1       │  PostgreSQL AMV / IHM (id=1)           │
   │                        │          │  Criada em 10/09/2026                  │
   │  equipamentos          │  9       │  9 ativos cadastrados                  │
-  │                        │          │  2 com dados reais (AMV_39B, AMV_TESTE)│
+  │                        │          │  2 com dados reais (AMV39A-BAS, AMV_TESTE)│
   │  historico_status      │  —       │  Cresce a cada mudança de status       │
   │  alarmes               │  37+     │  Alarmes operacionais e de comunicação │
   │  supressoes            │  0       │  Supressões ativas por equipamento     │

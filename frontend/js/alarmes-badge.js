@@ -1,6 +1,8 @@
 /* Contador de alarmes ativos no ícone da sidebar — mesma fonte de dados da
-   tela de Alarmes (GET /api/alarmes?ativos=true, resolvido_em IS NULL).
-   Atualizado ao navegar para qualquer página e após Reconhecer/Resolver. */
+   aba Ativos e do VideoWall (GET /api/alarmes?ativos=true). A API já exclui
+   os alarmes de equipamentos suprimidos nessa consulta, então os contadores
+   nunca divergem. Atualizado ao navegar para qualquer página e após
+   Reconhecer/Normalizar/Suprimir. */
 
 window.CMA = window.CMA || {};
 
@@ -8,6 +10,8 @@ window.CMA = window.CMA || {};
   function aplicarContador(total) {
     var badge = document.querySelector('.app-sidebar__badge');
     if (badge) badge.textContent = String(total);
+    var notif = document.getElementById('notif-badge');
+    if (notif) notif.textContent = String(total);
   }
 
   /* Aceita a lista de alarmes já carregada (evita nova requisição) ou,

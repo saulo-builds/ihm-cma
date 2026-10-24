@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 # ---------------------------------------------------------------------------
 # Autenticacao
@@ -233,6 +233,8 @@ class EquipamentoResponse(BaseModel):
     ativo: bool
     criado_em: datetime
     atualizado_em: datetime
+    suprimido: bool = False
+    supressao_sem_prazo: bool = False
 
 
 class CategoriaDashboard(BaseModel):
@@ -278,8 +280,11 @@ class HistoricoStatusResponse(BaseModel):
 
 
 class EquipamentoAlarme(BaseModel):
+    id: int
     nome: str
     local: str
+    dispositivo_id: Optional[str] = None
+    ativo: bool = True
 
 
 class AlarmeResponse(BaseModel):
@@ -291,9 +296,10 @@ class AlarmeResponse(BaseModel):
     descricao: Optional[str] = None
     iniciado_em: datetime
     reconhecido: bool
+    suprimido: bool = False
 
 
-class ResolverAlarmeRequest(BaseModel):
+class NormalizarAlarmeRequest(BaseModel):
     observacao: Optional[str] = None
 
 
@@ -311,10 +317,44 @@ class AlarmeHistoricoResponse(BaseModel):
     titulo: str
     descricao: Optional[str] = None
     iniciado_em: datetime
-    resolvido_em: Optional[datetime] = None
+    normalizado_em: Optional[datetime] = None
     reconhecido_em: Optional[datetime] = None
     reconhecido_por_nome: Optional[str] = None
-    resolvido_por_nome: Optional[str] = None
+    normalizado_por_nome: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Supressoes
+# ---------------------------------------------------------------------------
+
+
+class SuprimirEquipamentoRequest(BaseModel):
+    motivo: str = Field(..., min_length=1, max_length=200)
+    # None = sem prazo (somente Administrador). Expiracao calculada no servidor.
+    duracao_horas: int | None = Field(default=None, ge=1)
+
+    @field_validator("motivo", mode="before")
+    @classmethod
+    def _strip_motivo(cls, valor):
+        # Antes do min_length: motivo so com espacos vira "" e e rejeitado (422)
+        return valor.strip() if isinstance(valor, str) else valor
+
+
+class SupressaoResponse(BaseModel):
+    id: int
+    equipamento_id: int
+    equipamento_nome: str
+    dispositivo_id: Optional[str] = None
+    localidade_nome: str
+    alarmes_ativos: int
+    motivo: str
+    suprimido_por: int
+    suprimido_por_nome: Optional[str] = None
+    suprimido_em: datetime
+    expira_em: Optional[datetime] = None
+    cancelado_em: Optional[datetime] = None
+    cancelado_por: Optional[int] = None
+    cancelado_por_nome: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

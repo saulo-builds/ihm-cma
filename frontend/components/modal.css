@@ -1,0 +1,180 @@
+/* Modais (<dialog> nativo) — mesmo visual dos modais das páginas de cadastro.
+   As páginas de cadastro ainda trazem cópia local destes estilos (mesmos
+   seletores e valores); este arquivo atende os diálogos compartilhados
+   (js/dialogos.js: supressão e confirmação). */
+
+dialog.modal {
+  border: none;
+  padding: 0;
+  width: 480px;
+  max-width: 92vw;
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  color: var(--text-hi);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+dialog.modal::backdrop {
+  background: rgba(4, 4, 12, 0.7);
+}
+
+dialog.modal[open] {
+  animation: modal-in 0.15s ease;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-md);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-hi);
+}
+
+.modal-body {
+  padding: 18px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== Diálogo de confirmação ===== */
+dialog.modal-confirm {
+  width: 400px;
+}
+
+.modal-confirm__text {
+  font-size: 14px;
+  color: var(--text-hi);
+  line-height: 1.5;
+}
+
+/* ===== Diálogo de supressão ===== */
+.supr-alvo {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.supr-alvo__disp {
+  color: var(--text-md);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+.supr-field + .supr-field {
+  margin-top: 16px;
+}
+
+textarea.input {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 12px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.supr-contador {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-lo);
+  text-align: right;
+}
+
+.supr-duracoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.supr-duracao {
+  position: relative;
+}
+
+.supr-duracao input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.supr-duracao span {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-md);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.supr-duracao input:checked + span {
+  border-color: var(--supr);
+  background: var(--supr-lo);
+  color: var(--supr-hi);
+}
+
+.supr-duracao input:focus-visible + span {
+  outline: 2px solid var(--mon);
+  outline-offset: 1px;
+}
+
+.supr-nota {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-md);
+  line-height: 1.5;
+}
+
+.supr-erro {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--crit-hi);
+}

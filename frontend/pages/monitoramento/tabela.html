@@ -173,6 +173,12 @@
   [hidden] {
     display: none !important;
   }
+  /* Status + badge "Suprimido" lado a lado */
+  .status-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 </style>
 
 <!-- ===== Cabeçalho de página ===== -->
@@ -291,6 +297,7 @@
           <th>Status</th>
           <th>Valor</th>
           <th>Falhas</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="ativos-tbody">
@@ -409,6 +416,16 @@
     dropdownsPopulados = true;
   }
 
+  /* Suprimir / Cancelar supressão. Supressão sem prazo só o Administrador
+     cancela (a API responde 403 aos demais) — então o botão some. */
+  function botaoSupressao(eq) {
+    if (!eq.suprimido) {
+      return '<button type="button" class="btn btn-ghost btn-sm btn-suprimir" data-id="' + eq.id + '">Suprimir</button>';
+    }
+    if (eq.supressao_sem_prazo && !window.CMA.api.ehAdmin()) return '';
+    return '<button type="button" class="btn btn-ghost btn-sm btn-cancelar-supr" data-id="' + eq.id + '">Cancelar supressão</button>';
+  }
+
   function render() {
     var start = (state.page - 1) * state.perPage;
     var pageItems = state.filtered.slice(start, start + state.perPage);
@@ -420,9 +437,12 @@
         '<td>' + escapeHtml(eq.localidade_nome) + '</td>' +
         '<td>' + escapeHtml(eq.responsavel || '--') + '</td>' +
         '<td>' + escapeHtml(eq.horario_op || '--') + '</td>' +
-        '<td>' + statusBadge(eq.status_nome) + '</td>' +
+        '<td><div class="status-cell">' + statusBadge(eq.status_nome) +
+        (eq.suprimido ? '<span class="badge-status status-suprimido"><span class="dot"></span>Suprimido</span>' : '') +
+        '</div></td>' +
         '<td class="td-mono">' + escapeHtml(eq.valor_atual || '--') + '</td>' +
         '<td class="td-mono">--</td>' +
+        '<td>' + botaoSupressao(eq) + '</td>' +
         '</tr>';
     }).join('');
 
@@ -487,6 +507,54 @@
       document.getElementById(id).value = '';
     });
     carregar();
+  }
+
+  /* ===== Suprimir / Cancelar supressão — delegação no tbody ===== */
+  tbody.addEventListener('click', function (evt) {
+    var btn = evt.target.closest('button[data-id]');
+    if (!btn) return;
+    var id = Number(btn.getAttribute('data-id'));
+    var eq = state.filtered.filter(function (e) { return e.id === id; })[0];
+    if (!eq) return;
+
+    if (btn.classList.contains('btn-suprimir')) {
+      window.CMA.abrirDialogoSupressao(eq).then(function (supressao) {
+        if (!supressao) return;
+        eq.suprimido = true;
+        eq.supressao_sem_prazo = !supressao.expira_em;
+        render();
+        if (window.CMA.atualizarContadorAlarmes) window.CMA.atualizarContadorAlarmes();
+      });
+    } else if (btn.classList.contains('btn-cancelar-supr')) {
+      window.CMA.confirmar({
+        titulo: 'Cancelar supressão',
+        mensagem: 'Cancelar a supressão de "' + eq.nome +
+          '"? Os alarmes ativos deste equipamento voltam a aparecer imediatamente.',
+        textoConfirmar: 'Cancelar supressão',
+        perigo: true
+      }).then(function (ok) {
+        if (!ok) return;
+        btn.disabled = true;
+        return window.CMA.api.cancelarSupressao(eq.id)
+          .then(function () {
+            eq.suprimido = false;
+            eq.supressao_sem_prazo = false;
+            render();
+            if (window.CMA.atualizarContadorAlarmes) window.CMA.atualizarContadorAlarmes();
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            window.alert(err.message);
+          });
+      });
+    }
+  });
+
+  /* Filtro inicial vindo de outra tela (ex.: "Ver ativo" no card de alarme) —
+     consumido uma única vez, pois o router não repassa query string. */
+  if (window.CMA.tabelaFiltroInicial) {
+    document.getElementById('flt-id').value = String(window.CMA.tabelaFiltroInicial.id);
+    window.CMA.tabelaFiltroInicial = null;
   }
 
   if (elRetry) elRetry.addEventListener('click', carregar);

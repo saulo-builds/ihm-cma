@@ -25,7 +25,15 @@ _EQUIPAMENTO_SELECT = """
         e.mda_id, e.dispositivo_id,
         e.status_id, so.nome AS status_nome, so.cor_hex AS status_cor,
         e.maturidade, e.horario_op, e.responsavel, e.valor_atual,
-        e.ultima_comun, e.ativo, e.criado_em, e.atualizado_em
+        e.ultima_comun, e.ativo, e.criado_em, e.atualizado_em,
+        EXISTS (
+            SELECT 1 FROM ihm.supressoes_ativas sa WHERE sa.equipamento_id = e.id
+        ) AS suprimido,
+        EXISTS (
+            SELECT 1 FROM ihm.supressoes s
+            WHERE s.equipamento_id = e.id AND s.expira_em IS NULL
+              AND s.id IN (SELECT id FROM ihm.supressoes_ativas)
+        ) AS supressao_sem_prazo
     FROM ihm.equipamentos e
     JOIN ihm.tipos_equipamento te ON te.id = e.tipo_id
     JOIN ihm.localidades l ON l.id = e.localidade_id

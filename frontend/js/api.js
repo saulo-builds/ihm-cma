@@ -14,6 +14,15 @@ window.CMA = window.CMA || {};
     return localStorage.getItem(CHAVE_TOKEN);
   }
 
+  /* Mesmo nome de perfil que a API compara (PERFIL_ADMIN em api/auth.py).
+     Aqui serve só para esconder ações na tela — quem decide é a API. */
+  var PERFIL_ADMIN = 'Administrador';
+
+  function ehAdmin() {
+    var usuario = getUsuario();
+    return !!usuario && usuario.perfil === PERFIL_ADMIN;
+  }
+
   function getUsuario() {
     var raw = localStorage.getItem(CHAVE_USUARIO);
     if (!raw) return null;
@@ -127,6 +136,7 @@ window.CMA = window.CMA || {};
     logout: logout,
     getToken: getToken,
     getUsuario: getUsuario,
+    ehAdmin: ehAdmin,
     fetch: apiFetch,
 
     // ---- Dashboard / equipamentos ----
@@ -159,18 +169,40 @@ window.CMA = window.CMA || {};
     },
 
     // ---- Alarmes ----
-    getAlarmes: function (ativos) {
-      var qs = ativos === undefined ? '' : '?ativos=' + (ativos ? 'true' : 'false');
-      return apiFetch('/api/alarmes' + qs);
+    /* ativos=true sem "suprimidos" já vem SEM os suprimidos (regra da API) —
+       mesma fonte usada pela aba Ativos, badge do sino e VideoWall. */
+    getAlarmes: function (ativos, filtros) {
+      var params = Object.assign({}, filtros || {});
+      if (ativos !== undefined) params.ativos = ativos ? 'true' : 'false';
+      return apiFetch('/api/alarmes' + construirQuery(params));
     },
     reconhecerAlarme: function (id) {
       return apiFetch('/api/alarmes/' + id + '/reconhecer', { method: 'PATCH' });
     },
-    resolverAlarme: function (id, observacao) {
-      return apiFetch('/api/alarmes/' + id + '/resolver', {
+    normalizarAlarme: function (id, observacao) {
+      return apiFetch('/api/alarmes/' + id + '/normalizar', {
         method: 'PATCH',
         body: JSON.stringify({ observacao: observacao || null }),
       });
+    },
+
+    // ---- Supressões ----
+    /* duracaoHoras null = sem prazo (só Administrador). A expiração é
+       calculada no servidor — o frontend nunca envia horário. */
+    suprimirEquipamento: function (equipamentoId, motivo, duracaoHoras) {
+      return apiFetch('/api/equipamentos/' + equipamentoId + '/suprimir', {
+        method: 'POST',
+        body: JSON.stringify({ motivo: motivo, duracao_horas: duracaoHoras }),
+      });
+    },
+    cancelarSupressao: function (equipamentoId) {
+      return apiFetch('/api/equipamentos/' + equipamentoId + '/supressao', { method: 'DELETE' });
+    },
+    getSupressao: function (equipamentoId) {
+      return apiFetch('/api/equipamentos/' + equipamentoId + '/supressao');
+    },
+    getSupressoes: function () {
+      return apiFetch('/api/supressoes');
     },
     getHistoricoAlarmes: function (filtros) {
       return apiFetch('/api/alarmes/historico' + construirQuery(filtros));

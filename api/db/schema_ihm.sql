@@ -243,7 +243,7 @@ VALUES
   ('TAM-CTC-01','Monitoramento CTC','Alimentacao eletrica dos equip. de sinalizacao',
    4,2,1,'TAM-CTC-01',1,'Concluido','24h','GOT/CMA'),
   ('AMV-BRS-01','Monitoramento AMV','Aparelho de Mudanca de Via - chaveamento',
-   4,4,2,'AMV_39B',1,'Concluido','06-22h','GOT/CMA'),
+   4,4,2,'AMV39A-BAS',1,'Concluido','06-22h','GOT/CMA'),
   ('STO-L10-01','STO L10','Comunicacao entre STOs das estacoes da L10',
    5,5,2,'STO-L10-01',5,'Parcial','24h','GOT/CMA');
 

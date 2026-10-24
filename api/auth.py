@@ -10,6 +10,19 @@ import bcrypt
 
 security = HTTPBearer()
 
+# PENDENCIA: o perfil e comparado pelo NOME vindo do JWT (ihm.perfis.nome).
+# - Renomear o perfil no banco quebra esta regra (o usuario cai no limite
+#   de Operador).
+# - Mudanca de perfil so vale apos novo login (o token guarda o perfil
+#   emitido no login ate expirar).
+# Ideal futuro: perfil_id ou permissoes no token, validado contra o banco.
+PERFIL_ADMIN = "Administrador"
+
+
+def eh_admin(usuario: dict) -> bool:
+    """True se o payload do token (get_usuario_atual) for de Administrador."""
+    return usuario.get("perfil") == PERFIL_ADMIN
+
 
 def hash_senha(senha: str) -> str:
     return bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')

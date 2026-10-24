@@ -89,7 +89,7 @@ def conectar_fonte(fonte):
 
     Retorna (conn, cursor) ou (None, None) se a conexao falhar.
     """
-    tipo          = fonte["tipo"]
+    tipo          = fonte["fonte_tipo"]
     credencial_env = fonte["credencial_env"]
 
     # Busca a connection string na variavel de ambiente referenciada
@@ -97,7 +97,7 @@ def conectar_fonte(fonte):
     if not connection_string:
         log.error(
             f"Variavel de ambiente '{credencial_env}' nao encontrada no .env. "
-            f"Fonte '{fonte['nome']}' nao sera monitorada."
+            f"Fonte '{fonte['fonte_nome']}' nao sera monitorada."
         )
         return None, None
 
@@ -119,7 +119,7 @@ def conectar_fonte(fonte):
             return None, None
 
     except Exception as e:
-        log.error(f"Erro ao conectar na fonte '{fonte['nome']}': {e}")
+        log.error(f"Erro ao conectar na fonte '{fonte['fonte_nome']}': {e}")
         return None, None
 
 
@@ -200,6 +200,26 @@ def alarme_comunicacao_ativo(cur, equipamento_id):
         WHERE equipamento_id = %s
           AND tipo = 'Falha de Comunicacao'
           AND resolvido_em IS NULL
+        LIMIT 1
+        """,
+        (equipamento_id,),
+    )
+    return cur.fetchone() is not None
+
+
+def equipamento_suprimido(cur, equipamento_id):
+    """Verifica se o equipamento possui supressao de alarmes vigente.
+
+    Consulta ihm.supressoes_ativas, que ja filtra supressoes canceladas
+    e expiradas -- quando a supressao expira, esta funcao passa a retornar
+    False no ciclo seguinte sem nenhuma acao adicional.
+
+    Retorna True se houver supressao vigente, False caso contrario.
+    """
+    cur.execute(
+        """
+        SELECT 1 FROM ihm.supressoes_ativas
+        WHERE equipamento_id = %s
         LIMIT 1
         """,
         (equipamento_id,),
@@ -306,10 +326,13 @@ def ciclo_watchdog(cur_ihm):
                 atualizar_status(cur_ihm, equipamento_id, STATUS_OFFLINE, status_atual)
                 log.warning(f"[{codigo}] OFFLINE · fonte '{eq['fonte_nome']}' indisponivel.")
             if not alarme_comunicacao_ativo(cur_ihm, equipamento_id):
-                abrir_alarme_comunicacao(
-                    cur_ihm, equipamento_id,
-                    f"Fonte de dados '{eq['fonte_nome']}' indisponivel."
-                )
+                if equipamento_suprimido(cur_ihm, equipamento_id):
+                    log.info(f"[{codigo}] Suprimido · alarme de comunicacao nao aberto.")
+                else:
+                    abrir_alarme_comunicacao(
+                        cur_ihm, equipamento_id,
+                        f"Fonte de dados '{eq['fonte_nome']}' indisponivel."
+                    )
             continue
 
         # Busca ultimo dado usando os campos dinamicos da fonte
@@ -341,6 +364,9 @@ def ciclo_watchdog(cur_ihm):
                 log.info(f"[{codigo}] OFFLINE · ultimo contato: {ultimo_str}")
 
             if not alarme_comunicacao_ativo(cur_ihm, equipamento_id):
+                if equipamento_suprimido(cur_ihm, equipamento_id):
+                    log.info(f"[{codigo}] Suprimido · alarme de comunicacao nao aberto.")
+                    continue
                 descricao = (
                     f"Sem dados ha mais de {OFFLINE_TIMEOUT_S}s. "
                     f"Ultimo contato: {ultimo_str}."

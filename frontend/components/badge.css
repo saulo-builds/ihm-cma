@@ -59,6 +59,16 @@
   background: var(--text-md);
 }
 
+/* Equipamento com alarmes suprimidos — tom neutro, sem pulsação */
+.badge-status.status-suprimido {
+  background: var(--supr-lo);
+  color: var(--supr-hi);
+  border: 1px solid var(--supr);
+}
+.badge-status.status-suprimido .dot {
+  background: var(--supr-hi);
+}
+
 /* Pulsação do dot — reservada ao estado crítico, para chamar atenção sem poluir o restante da UI */
 @keyframes badge-pulse {
   0%,
