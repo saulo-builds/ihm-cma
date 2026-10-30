@@ -6,7 +6,9 @@ window.CMA = window.CMA || {};
 (function () {
   'use strict';
 
-  var API_BASE = 'http://10.148.53.111:8000';
+  /* Derivado da própria página (mesmo protocolo/host, porta 8000) para o mesmo
+     código funcionar na VM e em localhost, sem IP fixo. */
+  var API_BASE = window.location.protocol + '//' + window.location.hostname + ':8000';
   var CHAVE_TOKEN = 'cma_token';
   var CHAVE_USUARIO = 'cma_usuario';
 
